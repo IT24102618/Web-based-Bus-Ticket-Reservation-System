@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Checkout • Bus Reservation</title>
+    <style>
+        :root { --bg:#0f172a; --muted:#94a3b8; --text:#e5e7eb; --primary:#22c55e; --primary-600:#16a34a; --input:#1f2937; --ring:rgba(34,197,94,.35); --card:#111827; }
+        html,body{height:100%}
+        body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica Neue,Arial;color:var(--text);background:linear-gradient(0deg,#0b1220,var(--bg));}
+        .container{max-width:800px;margin:24px auto;padding:0 16px}
+        .h1{font-size:22px;margin:16px 0;text-align:center}
+        .card{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01));border:1px solid rgba(148,163,184,.15);border-radius:14px;padding:20px;margin-bottom:16px}
+        .row{display:flex;justify-content:space-between;align-items:center;margin:8px 0}
+        .label{color:var(--muted);font-size:14px}
+        .value{font-weight:600}
+        .total{font-size:18px;color:var(--primary);border-top:1px solid rgba(148,163,184,.15);padding-top:12px;margin-top:12px}
+        .form{display:grid;gap:16px}
+        .input{padding:12px 14px;border-radius:10px;border:1px solid rgba(148,163,184,.25);background:var(--input);color:var(--text);outline:none}
+        .input:focus{box-shadow:0 0 0 4px var(--ring);border-color:var(--primary)}
+        .button{appearance:none;border:0;padding:12px 16px;border-radius:10px;background:linear-gradient(180deg,var(--primary),var(--primary-600));color:#fff;font-weight:600;cursor:pointer;width:100%}
+        .link{color:var(--primary);text-decoration:none}
+        .link:hover{text-decoration:underline}
+        .meta{color:var(--muted);text-align:center;margin-top:16px}
+        .error{color:#ef4444;font-size:12px;margin-top:4px;display:block}
+        .input.error{border-color:#ef4444;box-shadow:0 0 0 4px rgba(239,68,68,.2)}
+        .input.success{border-color:#10b981;box-shadow:0 0 0 4px rgba(16,185,129,.2)}
+        .validation-summary{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:12px;margin-bottom:16px;display:none}
+        .validation-summary.show{display:block}
+        .validation-summary ul{margin:0;padding-left:20px}
+        .validation-summary li{color:#ef4444;font-size:14px;margin-bottom:4px}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="h1">Checkout</h1>
+        
+        <div class="card">
+            <h3 style="margin-top:0">Trip Details</h3>
+            <div id="tripDetails"></div>
+        </div>
+        
+        <div class="card">
+            <h3 style="margin-top:0">Passenger Information</h3>
+            <div id="checkoutValidationSummary" class="validation-summary">
+                <strong>Please fix the following errors:</strong>
+                <ul id="checkoutValidationErrors"></ul>
+            </div>
+            <form class="form" id="checkoutForm">
+                <div>
+                    <label class="label">First Name</label>
+                    <input type="text" class="input" id="firstName" placeholder="Enter your first name" required />
+                    <span id="firstNameError" class="error"></span>
+                </div>
+                <div>
+                    <label class="label">Last Name</label>
+                    <input type="text" class="input" id="lastName" placeholder="Enter your last name" required />
+                    <span id="lastNameError" class="error"></span>
+                </div>
+                <div>
+                    <label class="label">Email</label>
+                    <input type="email" class="input" id="email" placeholder="Enter your email address" required />
+                    <span id="emailError" class="error"></span>
+                </div>
+                <div>
+                    <label class="label">Phone Number</label>
+                    <input type="tel" class="input" id="phone" placeholder="Enter your phone number" required />
+                    <span id="phoneError" class="error"></span>
+                </div>
+                <div>
+                    <label class="label">NIC Number</label>
+                    <input type="text" class="input" id="nic" placeholder="123456789012 or 1234567890V" required />
+                    <span id="nicError" class="error"></span>
+                </div>
+                <button type="submit" class="button">Confirm Booking</button>
+            </form>
+        </div>
+        
+        <div class="meta">
+            <a class="link" href="booking.html">Back to Search</a>
+        </div>
+    </div>
+
+    <script>
+        // Load checkout data from localStorage
+        const checkoutData = JSON.parse(localStorage.getItem('checkoutData') || '{}');
+        
+        // Display trip details
+        function displayTripDetails() {
+            const tripDetails = document.getElementById('tripDetails');
+            const schedule = checkoutData.schedule;
+            const booking = checkoutData;
+            
+            if (!schedule) {
+                tripDetails.innerHTML = '<p style="color:var(--muted)">No trip details available. Please go back and select a schedule.</p>';
+                return;
+            }
+            
+            const totalFare = schedule.fare ? (parseFloat(schedule.fare) * (booking.count || 1)).toFixed(2) : 'N/A';
+            
+            tripDetails.innerHTML = `
+                <div class="row">
+                    <span class="label">Route:</span>
+                    <span class="value">${schedule.route?.fromStand || 'N/A'} → ${schedule.route?.toStand || 'N/A'}</span>
+                </div>
+                <div class="row">
+                    <span class="label">Date:</span>
+                    <span class="value">${schedule.travelDate || 'N/A'}</span>
+                </div>
+                <div class="row">
+                    <span class="label">Time:</span>
+                    <span class="value">${schedule.startTime || 'N/A'} - ${schedule.endTime || 'N/A'}</span>
+                </div>
+                <div class="row">
+                    <span class="label">Bus:</span>
+                    <span class="value">${schedule.bus?.registrationNo || 'N/A'}</span>
+                </div>
+                <div class="row">
+                    <span class="label">Passengers:</span>
+                    <span class="value">${booking.count || 1}</span>
+                </div>
+                <div class="row">
+                    <span class="label">Fare per person:</span>
+                    <span class="value">${schedule.fare ? 'Rs. ' + schedule.fare : 'N/A'}</span>
+                </div>
+                <div class="row total">
+                    <span class="label">Total Amount:</span>
+                    <span class="value">${schedule.fare ? 'Rs. ' + totalFare : 'N/A'}</span>
+                </div>
+            `;
+        }
+        
+        // Handle form submission
+        document.getElementById('checkoutForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            // Validate form before submission
+            if (!validateCheckoutForm()) {
+                return;
+            }
+            
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const nic = document.getElementById('nic').value.trim();
+            
+            // Store passenger details for payment page
+            const passengerData = {
+                firstName: firstName,
+                lastName: lastName,
+                email: email,
+                phone: phone,
+                nic: nic
+            };
+            
+            // Store passenger data and checkout data for payment page
+            localStorage.setItem('passengerData', JSON.stringify(passengerData));
+            localStorage.setItem('paymentData', JSON.stringify(checkoutData));
+            
+            // Redirect to payment page
+            window.location.href = 'payment.html';
+        });
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            displayTripDetails();
+            setupCheckoutValidation();
+        });
+
+        // Validation functions
+        function validateFirstName(firstName) {
+            if (!firstName) {
+                return 'First name is required';
+            }
+            if (firstName.length < 2) {
+                return 'First name must be at least 2 characters long';
+            }
+            if (firstName.length > 50) {
+                return 'First name must be less than 50 characters';
+            }
+            if (!/^[a-zA-Z\s\-']+$/.test(firstName)) {
+                return 'First name can only contain letters, spaces, hyphens, and apostrophes';
+            }
+            return null;
+        }
+
+        function validateLastName(lastName) {
+            if (!lastName) {
+                return 'Last name is required';
+            }
+            if (lastName.length < 2) {
+                return 'Last name must be at least 2 characters long';
+            }
+            if (lastName.length > 50) {
+                return 'Last name must be less than 50 characters';
+            }
+            if (!/^[a-zA-Z\s\-']+$/.test(lastName)) {
+                return 'Last name can only contain letters, spaces, hyphens, and apostrophes';
+            }
+            return null;
+        }
+
+        function validateEmail(email) {
+            if (!email) {
+                return 'Email is required';
+            }
+            if (email.length > 100) {
+                return 'Email must be less than 100 characters';
+            }
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                return 'Please enter a valid email address';
+            }
+            return null;
+        }
+
+        function validatePhone(phone) {
+            if (!phone) {
+                return 'Phone number is required';
+            }
+            const digitsOnly = phone.replace(/[^0-9]/g, '');
+            if (digitsOnly.length !== 10) {
+                return 'Phone number must be exactly 10 digits';
+            }
+            return null;
+        }
+
+        function validateNIC(nic) {
+            if (!nic) {
+                return 'NIC number is required';
+            }
+            const newNicRegex = /^[0-9]{12}$/;
+            const oldNicRegex = /^[0-9]{10}V$/i;
+            if (!newNicRegex.test(nic) && !oldNicRegex.test(nic)) {
+                return 'NIC must be 12 digits or 10 digits followed by V';
+            }
+            return null;
+        }
+
+        function setupCheckoutValidation() {
+            const inputs = [
+                { id: 'firstName', validator: validateFirstName, errorId: 'firstNameError' },
+                { id: 'lastName', validator: validateLastName, errorId: 'lastNameError' },
+                { id: 'email', validator: validateEmail, errorId: 'emailError' },
+                { id: 'phone', validator: validatePhone, errorId: 'phoneError' },
+                { id: 'nic', validator: validateNIC, errorId: 'nicError' }
+            ];
+
+            inputs.forEach(({ id, validator, errorId }) => {
+                const input = document.getElementById(id);
+                const errorElement = document.getElementById(errorId);
+
+                // Real-time validation on input
+                input.addEventListener('input', (e) => {
+                    // Add input restrictions
+                    if (id === 'firstName' || id === 'lastName') {
+                        // Allow only letters, spaces, hyphens, and apostrophes
+                        e.target.value = e.target.value.replace(/[^a-zA-Z\s\-']/g, '');
+                    } else if (id === 'phone') {
+                        // Allow only digits, spaces, hyphens, and parentheses
+                        e.target.value = e.target.value.replace(/[^0-9\s\-\(\)]/g, '');
+                    } else if (id === 'nic') {
+                        let value = e.target.value.toUpperCase();
+                        
+                        // Remove any non-digit characters except V at the end
+                        if (value.length <= 10) {
+                            // Only digits for first 10 characters
+                            value = value.replace(/[^0-9]/g, '');
+                        } else if (value.length === 11) {
+                            // Check if 11th character is V (old format) or digit (new format)
+                            const first10 = value.substring(0, 10).replace(/[^0-9]/g, '');
+                            const lastChar = value.charAt(10);
+                            
+                            if (lastChar === 'V') {
+                                // Old format: 10 digits + V
+                                value = first10 + 'V';
+                            } else if (/[0-9]/.test(lastChar)) {
+                                // New format: continuing with digits
+                                value = first10 + lastChar;
+                            } else {
+                                // Invalid character, keep only digits
+                                value = first10;
+                            }
+                        } else if (value.length === 12) {
+                            // For 12th character, only allow digits (new format)
+                            const first11 = value.substring(0, 11).replace(/[^0-9]/g, '');
+                            const lastChar = value.charAt(11);
+                            
+                            if (/[0-9]/.test(lastChar)) {
+                                value = first11 + lastChar;
+                            } else {
+                                value = first11;
+                            }
+                        } else {
+                            // Limit to 12 characters max
+                            value = value.substring(0, 12);
+                        }
+                        
+                        e.target.value = value;
+                    }
+                    
+                    validateCheckoutField(input, validator, errorElement);
+                });
+
+                // Validation on blur
+                input.addEventListener('blur', () => {
+                    validateCheckoutField(input, validator, errorElement);
+                });
+            });
+        }
+
+        function validateCheckoutField(input, validator, errorElement) {
+            const error = validator(input.value);
+            if (error) {
+                input.classList.add('error');
+                input.classList.remove('success');
+                errorElement.textContent = error;
+            } else {
+                input.classList.remove('error');
+                input.classList.add('success');
+                errorElement.textContent = '';
+            }
+        }
+
+        function validateCheckoutForm() {
+            const inputs = [
+                { id: 'firstName', validator: validateFirstName, errorId: 'firstNameError' },
+                { id: 'lastName', validator: validateLastName, errorId: 'lastNameError' },
+                { id: 'email', validator: validateEmail, errorId: 'emailError' },
+                { id: 'phone', validator: validatePhone, errorId: 'phoneError' },
+                { id: 'nic', validator: validateNIC, errorId: 'nicError' }
+            ];
+
+            const errors = [];
+            let isValid = true;
+
+            inputs.forEach(({ id, validator, errorId }) => {
+                const input = document.getElementById(id);
+                const errorElement = document.getElementById(errorId);
+                const error = validator(input.value);
+                
+                if (error) {
+                    input.classList.add('error');
+                    input.classList.remove('success');
+                    errorElement.textContent = error;
+                    errors.push(error);
+                    isValid = false;
+                } else {
+                    input.classList.remove('error');
+                    input.classList.add('success');
+                    errorElement.textContent = '';
+                }
+            });
+
+            // Show validation summary if there are errors
+            const validationSummary = document.getElementById('checkoutValidationSummary');
+            const validationErrors = document.getElementById('checkoutValidationErrors');
+            
+            if (!isValid) {
+                validationErrors.innerHTML = errors.map(error => `<li>${error}</li>`).join('');
+                validationSummary.classList.add('show');
+            } else {
+                validationSummary.classList.remove('show');
+            }
+
+            return isValid;
+        }
+
+        function clearCheckoutValidationErrors() {
+            const inputs = ['firstName', 'lastName', 'email', 'phone', 'nic'];
+            const errorIds = ['firstNameError', 'lastNameError', 'emailError', 'phoneError', 'nicError'];
+
+            inputs.forEach((inputId, index) => {
+                const input = document.getElementById(inputId);
+                const errorElement = document.getElementById(errorIds[index]);
+                
+                input.classList.remove('error', 'success');
+                errorElement.textContent = '';
+            });
+
+            // Hide validation summary
+            const validationSummary = document.getElementById('checkoutValidationSummary');
+            validationSummary.classList.remove('show');
+        }
+    </script>
+</body>
+</html>
+
+
+

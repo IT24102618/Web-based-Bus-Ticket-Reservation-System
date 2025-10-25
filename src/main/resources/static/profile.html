@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>My Profile • Bus Reservation</title>
+	<style>
+		:root { 
+			--bg:#0f172a; 
+			--muted:#94a3b8; 
+			--text:#e5e7eb; 
+			--primary:#22c55e; 
+			--primary-600:#16a34a; 
+			--input:#1f2937; 
+			--ring:rgba(34,197,94,.35);
+			--card:#111827;
+			--danger:#ef4444;
+			--success:#10b981;
+		}
+		html,body{height:100%}
+		body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica Neue,Arial;color:var(--text);background:linear-gradient(0deg,#0b1220,var(--bg));}
+		.nav{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(17,24,39,.8);backdrop-filter:blur(8px);border-bottom:1px solid rgba(148,163,184,.15);position:sticky;top:0;z-index:10}
+		.nav-left,.nav-right{display:flex;gap:12px;align-items:center}
+		.nav a, .nav button{color:var(--text);text-decoration:none;font-weight:600;background:transparent;border:0;cursor:pointer;padding:8px 10px;border-radius:8px}
+		.nav a:hover, .nav button:hover{background:rgba(148,163,184,.12)}
+		.brand{font-weight:800;letter-spacing:.2px}
+		.container{max-width:800px;margin:24px auto;padding:0 16px}
+		.card{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01));border:1px solid rgba(148,163,184,.15);border-radius:14px;padding:20px;margin-bottom:16px}
+		.h1{font-size:22px;margin:0 0 6px}
+		.p{color:var(--muted);margin:0 0 16px}
+		.form{display:grid;gap:16px}
+		.label{font-size:13px;color:var(--muted);margin-bottom:6px;display:block;font-weight:500}
+		.input{width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(148,163,184,.25);background:var(--input);color:var(--text);outline:none;box-sizing:border-box;font-size:14px}
+		.input:focus{box-shadow:0 0 0 4px var(--ring);border-color:var(--primary)}
+		.input:disabled{opacity:0.6;cursor:not-allowed}
+		.row{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+		.form-group{margin-bottom:0}
+		.button{appearance:none;border:0;padding:12px 16px;border-radius:10px;background:linear-gradient(180deg,var(--primary),var(--primary-600));color:#fff;font-weight:600;cursor:pointer;transition:all 0.2s}
+		.button:hover{filter:brightness(1.05)}
+		.button:disabled{background:#6b7280;cursor:not-allowed}
+		.button.secondary{background:rgba(148,163,184,.2);color:var(--text)}
+		.button.secondary:hover{background:rgba(148,163,184,.3)}
+		.link{color:var(--primary);text-decoration:none}
+		.link:hover{text-decoration:underline}
+		.profile-header{display:flex;align-items:center;gap:16px;margin-bottom:20px}
+		.profile-avatar{width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--primary-600));display:flex;align-items:center;justify-content:center;font-size:24px;color:white}
+		.profile-info h2{margin:0;font-size:20px}
+		.profile-info p{margin:4px 0 0;color:var(--muted);font-size:14px}
+		.detail-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid rgba(148,163,184,.1)}
+		.detail-row:last-child{border-bottom:none}
+		.detail-label{color:var(--muted);font-size:14px}
+		.detail-value{font-weight:500}
+		.booking-card{background:rgba(255,255,255,.02);border:1px solid rgba(148,163,184,.1);border-radius:10px;padding:16px;margin-bottom:12px}
+		.booking-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+		.booking-id{font-weight:600;color:var(--primary)}
+		.booking-status{padding:4px 8px;border-radius:6px;font-size:12px;font-weight:500}
+		.booking-status.confirmed{background:rgba(16,185,129,.2);color:#10b981}
+		.booking-status.pending{background:rgba(245,158,11,.2);color:#f59e0b}
+		.booking-status.refund-requested{background:rgba(239,68,68,.2);color:#ef4444}
+		.booking-details{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:14px;color:var(--muted)}
+		.booking-route{font-weight:500;color:var(--text)}
+		.booking-actions{margin-top:12px;display:flex;gap:8px;justify-content:flex-end}
+		.refund-button{background:rgba(239,68,68,.2);color:#ef4444;border:1px solid rgba(239,68,68,.3);padding:6px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;transition:all 0.2s}
+		.refund-button:hover{background:rgba(239,68,68,.3)}
+		.refund-button:disabled{opacity:0.5;cursor:not-allowed;background:rgba(107,114,128,.2);color:#6b7280;border-color:rgba(107,114,128,.3)}
+		.hidden{display:none}
+		.message{padding:12px;border-radius:8px;margin-bottom:16px;font-size:14px}
+		.message.success{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:#10b981}
+		.message.error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#ef4444}
+		.loading{text-align:center;padding:20px;color:var(--muted)}
+		.complaint-card{background:rgba(255,255,255,.02);border:1px solid rgba(148,163,184,.1);border-radius:10px;padding:16px;margin-bottom:12px}
+		.complaint-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+		.complaint-id{font-weight:600;color:var(--primary)}
+		.complaint-type{padding:4px 8px;border-radius:6px;font-size:12px;font-weight:500;background:rgba(239,68,68,.2);color:#ef4444}
+		.complaint-details{font-size:14px;color:var(--muted);margin-bottom:8px}
+		.complaint-description{background:rgba(148,163,184,.05);padding:8px;border-radius:6px;margin-bottom:8px;font-size:13px}
+		.complaint-reply{background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.2);padding:8px;border-radius:6px;margin-top:8px;font-size:13px}
+		.complaint-reply-header{font-weight:600;color:var(--primary);margin-bottom:4px;font-size:12px}
+		.complaint-date{font-size:12px;color:var(--muted)}
+		.error{color:var(--danger);font-size:12px;margin-top:4px;display:block}
+		.input.error{border-color:var(--danger);box-shadow:0 0 0 4px rgba(239,68,68,.2)}
+		.input.success{border-color:var(--success);box-shadow:0 0 0 4px rgba(16,185,129,.2)}
+		.validation-summary{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:12px;margin-bottom:16px;display:none}
+		.validation-summary.show{display:block}
+		.validation-summary ul{margin:0;padding-left:20px}
+		.validation-summary li{color:var(--danger);font-size:14px;margin-bottom:4px}
+	</style>
+</head>
+<body>
+	<nav class="nav">
+		<div class="nav-left">
+			<span class="brand">Bus Ticket Reservation System</span>
+		</div>
+		<div class="nav-right">
+			<a href="index.html">Home</a>
+			<a href="booking.html">Book Now</a>
+			<button id="navSignout">Sign out</button>
+		</div>
+	</nav>
+
+	<div class="container">
+		<div id="messageContainer"></div>
+
+		<!-- Profile Header -->
+		<div class="card">
+			<div class="profile-header">
+				<div class="profile-avatar">👤</div>
+				<div class="profile-info">
+					<h2 id="userName">Loading...</h2>
+					<p id="userEmail">Loading...</p>
+				</div>
+			</div>
+		</div>
+
+		<!-- Profile Details -->
+		<div class="card">
+			<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+				<h1 class="h1">Profile Details</h1>
+				<button id="editToggle" class="button secondary">Edit Profile</button>
+			</div>
+			
+			<!-- View Mode -->
+			<div id="viewMode">
+				<div class="detail-row">
+					<span class="detail-label">First Name</span>
+					<span class="detail-value" id="viewFirstName">-</span>
+				</div>
+				<div class="detail-row">
+					<span class="detail-label">Last Name</span>
+					<span class="detail-value" id="viewLastName">-</span>
+				</div>
+				<div class="detail-row">
+					<span class="detail-label">Email</span>
+					<span class="detail-value" id="viewEmail">-</span>
+				</div>
+				<div class="detail-row">
+					<span class="detail-label">Phone</span>
+					<span class="detail-value" id="viewPhone">-</span>
+				</div>
+				<div class="detail-row">
+					<span class="detail-label">NIC Number</span>
+					<span class="detail-value" id="viewNic">-</span>
+				</div>
+			</div>
+
+			<!-- Edit Mode -->
+			<form id="editMode" class="form hidden">
+				<div id="validationSummary" class="validation-summary">
+					<strong>Please fix the following errors:</strong>
+					<ul id="validationErrors"></ul>
+				</div>
+				<div class="row">
+					<div class="form-group">
+						<label class="label">First Name</label>
+						<input id="editFirstName" class="input" required />
+						<span id="firstNameError" class="error"></span>
+					</div>
+					<div class="form-group">
+						<label class="label">Last Name</label>
+						<input id="editLastName" class="input" required />
+						<span id="lastNameError" class="error"></span>
+					</div>
+				</div>
+				<div class="row">
+					<div class="form-group">
+						<label class="label">Email</label>
+						<input id="editEmail" class="input" type="email" required />
+						<span id="emailError" class="error"></span>
+					</div>
+					<div class="form-group">
+						<label class="label">Phone</label>
+						<input id="editPhone" class="input" type="tel" />
+						<span id="phoneError" class="error"></span>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="label">NIC Number</label>
+					<input id="editNic" class="input" required />
+					<span id="nicError" class="error"></span>
+				</div>
+				<div class="form-group">
+					<label class="label">Change Password</label>
+					<input id="editPassword" class="input" type="password" placeholder="Leave blank to keep current" />
+					<span id="passwordError" class="error"></span>
+				</div>
+				<div style="display:flex;gap:12px;margin-top:8px">
+					<button type="submit" class="button">Save Changes</button>
+					<button type="button" id="cancelEdit" class="button secondary">Cancel</button>
+				</div>
+			</form>
+		</div>
+
+		<!-- Layout for complaints and bookings -->
+		<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+			<!-- My Complaints -->
+			<div class="card">
+				<h1 class="h1">My Complaints</h1>
+				<p class="p">View your submitted complaints and replies</p>
+				<div id="complaintsContainer">
+					<div class="loading">Loading your complaints...</div>
+				</div>
+			</div>
+
+			<!-- My Bookings -->
+			<div class="card">
+				<h1 class="h1">My Bookings</h1>
+				<p class="p">View and manage your booking history</p>
+				<div id="bookingsContainer">
+					<div class="loading">Loading your bookings...</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		const API = 'http://localhost:8080/api/users';
+		const BOOKINGS_API = 'http://localhost:8080/api/bookings';
+		const FEEDBACK_API = 'http://localhost:8080/api/feedback';
+		const PAYMENTS_API = 'http://localhost:8080/api/payments';
+		let currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+		
+		if (!currentUser) { 
+			window.location.href = 'login.html'; 
+		}
+
+		// Initialize page
+		document.addEventListener('DOMContentLoaded', () => {
+			loadUserProfile();
+			loadUserBookings();
+			loadUserComplaints();
+			setupEventListeners();
+			setupValidation();
+		});
+
+		function loadUserProfile() {
+			// Update profile header
+			document.getElementById('userName').textContent = `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || 'User';
+			document.getElementById('userEmail').textContent = currentUser.email || '';
+
+			// Update view mode
+			document.getElementById('viewFirstName').textContent = currentUser.firstName || '-';
+			document.getElementById('viewLastName').textContent = currentUser.lastName || '-';
+			document.getElementById('viewEmail').textContent = currentUser.email || '-';
+			document.getElementById('viewPhone').textContent = currentUser.phone || '-';
+			document.getElementById('viewNic').textContent = currentUser.nic || '-';
+
+			// Populate edit mode
+			document.getElementById('editFirstName').value = currentUser.firstName || '';
+			document.getElementById('editLastName').value = currentUser.lastName || '';
+			document.getElementById('editEmail').value = currentUser.email || '';
+			document.getElementById('editPhone').value = currentUser.phone || '';
+			document.getElementById('editNic').value = currentUser.nic || '';
+		}
+
+		async function loadUserBookings() {
+			try {
+				const response = await fetch(`${BOOKINGS_API}/email/${currentUser.email}`);
+				if (response.ok) {
+					const bookings = await response.json();
+					// Load payment information for each booking
+					const bookingsWithPayments = await Promise.all(
+						bookings.map(async (booking) => {
+							try {
+								const paymentResponse = await fetch(`${PAYMENTS_API}/booking/${booking.bookingId}`);
+								if (paymentResponse.ok) {
+									const payments = await paymentResponse.json();
+									booking.payment = payments.length > 0 ? payments[0] : null;
+								}
+							} catch (error) {
+								console.error('Error loading payment for booking:', booking.bookingId, error);
+							}
+							return booking;
+						})
+					);
+					displayBookings(bookingsWithPayments);
+				} else {
+					document.getElementById('bookingsContainer').innerHTML = '<div class="loading">No bookings found</div>';
+				}
+			} catch (error) {
+				console.error('Error loading bookings:', error);
+				document.getElementById('bookingsContainer').innerHTML = '<div class="loading">Error loading bookings</div>';
+			}
+		}
+
+		async function loadUserComplaints() {
+			try {
+				const response = await fetch(`${FEEDBACK_API}/user/${currentUser.id}`);
+				if (response.ok) {
+					const feedbacks = await response.json();
+					// Filter only complaints (type = 'complain')
+					const complaints = feedbacks.filter(feedback => feedback.type === 'complain');
+					displayComplaints(complaints);
+				} else {
+					document.getElementById('complaintsContainer').innerHTML = '<div class="loading">No complaints found</div>';
+				}
+			} catch (error) {
+				console.error('Error loading complaints:', error);
+				document.getElementById('complaintsContainer').innerHTML = '<div class="loading">Error loading complaints</div>';
+			}
+		}
+
+		function displayBookings(bookings) {
+			const container = document.getElementById('bookingsContainer');
+			
+			// Filter out bookings with accepted refunds
+			const activeBookings = bookings.filter(booking => {
+				const payment = booking.payment || {};
+				return payment.paymentStatus !== 'refund accepted';
+			});
+			
+			if (activeBookings.length === 0) {
+				container.innerHTML = '<div class="loading">No active bookings found</div>';
+				return;
+			}
+
+			container.innerHTML = activeBookings.map(booking => {
+				const schedule = booking.schedule || {};
+				const route = schedule.route || {};
+				const bus = schedule.bus || {};
+				const payment = booking.payment || {};
+				
+				// Determine booking status based on payment status
+				let statusClass = 'confirmed';
+				let statusText = 'Confirmed';
+				if (payment.paymentStatus === 'refund requested') {
+					statusClass = 'refund-requested';
+					statusText = 'Refund Requested';
+				}
+				
+				// Show refund button only if payment exists and status is not already refund requested
+				const showRefundButton = payment.paymentId && payment.paymentStatus !== 'refund requested';
+				
+				return `
+					<div class="booking-card">
+						<div class="booking-header">
+							<span class="booking-id">Booking #${booking.bookingId}</span>
+							<span class="booking-status ${statusClass}">${statusText}</span>
+						</div>
+						<div class="booking-details">
+							<div>
+								<div class="booking-route">${route.fromStand || 'N/A'} → ${route.toStand || 'N/A'}</div>
+								<div>Date: ${schedule.travelDate || 'N/A'}</div>
+								<div>Time: ${schedule.startTime || 'N/A'} - ${schedule.endTime || 'N/A'}</div>
+							</div>
+							<div>
+								<div>Bus: ${bus.registrationNo || 'N/A'}</div>
+								<div>Tickets: ${booking.bookedTickets || 1}</div>
+								<div>Fare: Rs. ${schedule.fare || 'N/A'}</div>
+							</div>
+						</div>
+						${showRefundButton ? `
+							<div class="booking-actions">
+								<button class="refund-button" onclick="requestRefund(${booking.bookingId}, ${payment.paymentId})">
+									Request Refund
+								</button>
+							</div>
+						` : ''}
+					</div>
+				`;
+			}).join('');
+		}
+
+		function displayComplaints(complaints) {
+			const container = document.getElementById('complaintsContainer');
+			
+			if (complaints.length === 0) {
+				container.innerHTML = '<div class="loading">No complaints found</div>';
+				return;
+			}
+
+			container.innerHTML = complaints.map(complaint => {
+				const hasReply = complaint.reply && complaint.reply.trim() !== '';
+				const dateStr = complaint.complainDate ? new Date(complaint.complainDate).toLocaleDateString() : 'N/A';
+				
+				return `
+					<div class="complaint-card">
+						<div class="complaint-header">
+							<span class="complaint-id">Complaint #${complaint.feedbackId}</span>
+							<span class="complaint-type">Complaint</span>
+						</div>
+						<div class="complaint-details">
+							<div class="complaint-date">Submitted: ${dateStr}</div>
+						</div>
+						<div class="complaint-description">
+							<strong>Description:</strong><br>
+							${complaint.description || 'No description provided'}
+						</div>
+						${hasReply ? `
+							<div class="complaint-reply">
+								<div class="complaint-reply-header">Customer Service Reply:</div>
+								${complaint.reply}
+							</div>
+						` : `
+							<div style="font-size:12px;color:var(--muted);font-style:italic;margin-top:8px;">
+								No reply yet from customer service
+							</div>
+						`}
+					</div>
+				`;
+			}).join('');
+		}
+
+		function setupEventListeners() {
+			// Edit toggle
+			document.getElementById('editToggle').addEventListener('click', () => {
+				document.getElementById('viewMode').classList.add('hidden');
+				document.getElementById('editMode').classList.remove('hidden');
+				document.getElementById('editToggle').classList.add('hidden');
+			});
+
+			// Cancel edit
+			document.getElementById('cancelEdit').addEventListener('click', () => {
+				document.getElementById('viewMode').classList.remove('hidden');
+				document.getElementById('editMode').classList.add('hidden');
+				document.getElementById('editToggle').classList.remove('hidden');
+				clearValidationErrors(); // Clear validation errors
+				loadUserProfile(); // Reset form
+			});
+
+			// Save changes
+			document.getElementById('editMode').addEventListener('submit', async (e) => {
+				e.preventDefault();
+				await saveProfileChanges();
+			});
+
+			// Sign out
+			document.getElementById('navSignout').addEventListener('click', () => {
+				localStorage.removeItem('currentUser');
+				window.location.href = 'index.html';
+			});
+		}
+
+		// Validation functions
+		function validateFirstName(firstName) {
+			const trimmed = firstName.trim();
+			if (!trimmed) {
+				return 'First name is required';
+			}
+			if (trimmed.length < 2) {
+				return 'First name must be at least 2 characters long';
+			}
+			if (trimmed.length > 50) {
+				return 'First name must be less than 50 characters';
+			}
+			if (!/^[a-zA-Z\s'-]+$/.test(trimmed)) {
+				return 'First name can only contain letters, spaces, hyphens, and apostrophes';
+			}
+			return null;
+		}
+
+		function validateLastName(lastName) {
+			const trimmed = lastName.trim();
+			if (!trimmed) {
+				return 'Last name is required';
+			}
+			if (trimmed.length < 2) {
+				return 'Last name must be at least 2 characters long';
+			}
+			if (trimmed.length > 50) {
+				return 'Last name must be less than 50 characters';
+			}
+			if (!/^[a-zA-Z\s'-]+$/.test(trimmed)) {
+				return 'Last name can only contain letters, spaces, hyphens, and apostrophes';
+			}
+			return null;
+		}
+
+		function validateEmail(email) {
+			const trimmed = email.trim();
+			if (!trimmed) {
+				return 'Email is required';
+			}
+			const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+			if (!emailRegex.test(trimmed)) {
+				return 'Please enter a valid email address';
+			}
+			if (trimmed.length > 100) {
+				return 'Email must be less than 100 characters';
+			}
+			return null;
+		}
+
+		function validatePhone(phone) {
+			const trimmed = phone.trim();
+			if (!trimmed) {
+				return null; // Phone is optional
+			}
+			// Remove all non-digit characters for validation
+			const digitsOnly = trimmed.replace(/\D/g, '');
+			if (digitsOnly.length !== 10) {
+				return 'Phone number must be exactly 10 digits';
+			}
+			// Check for valid phone format (allows various formats but must be 10 digits)
+			const phoneRegex = /^[0-9\s\-\(\)]{10,15}$/;
+			if (!phoneRegex.test(trimmed)) {
+				return 'Please enter a valid phone number';
+			}
+			return null;
+		}
+
+		function validateNIC(nic) {
+			const trimmed = nic.trim();
+			if (!trimmed) {
+				return 'NIC number is required';
+			}
+			// Sri Lankan NIC validation (12 digits OR 10 digits with V at end)
+			const newNicRegex = /^[0-9]{12}$/;
+			const oldNicRegex = /^[0-9]{10}V$/i;
+			
+			if (!newNicRegex.test(trimmed) && !oldNicRegex.test(trimmed)) {
+				return 'Please enter a valid NIC number (12 digits or 10 digits with V)';
+			}
+			return null;
+		}
+
+		function validatePassword(password) {
+			if (!password) {
+				return null; // Password is optional
+			}
+			if (password.length < 8) {
+				return 'Password must be at least 8 characters long';
+			}
+			if (password.length > 100) {
+				return 'Password must be less than 100 characters';
+			}
+			// Check for at least one uppercase, one lowercase, and one number
+			const hasUpperCase = /[A-Z]/.test(password);
+			const hasLowerCase = /[a-z]/.test(password);
+			const hasNumbers = /\d/.test(password);
+			
+			if (!hasUpperCase || !hasLowerCase || !hasNumbers) {
+				return 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
+			}
+			return null;
+		}
+
+		function setupValidation() {
+			const inputs = [
+				{ id: 'editFirstName', validator: validateFirstName, errorId: 'firstNameError' },
+				{ id: 'editLastName', validator: validateLastName, errorId: 'lastNameError' },
+				{ id: 'editEmail', validator: validateEmail, errorId: 'emailError' },
+				{ id: 'editPhone', validator: validatePhone, errorId: 'phoneError' },
+				{ id: 'editNic', validator: validateNIC, errorId: 'nicError' },
+				{ id: 'editPassword', validator: validatePassword, errorId: 'passwordError' }
+			];
+
+			inputs.forEach(({ id, validator, errorId }) => {
+				const input = document.getElementById(id);
+				const errorElement = document.getElementById(errorId);
+
+				// Real-time validation on input
+				input.addEventListener('input', () => {
+					validateField(input, validator, errorElement);
+				});
+
+				// Validation on blur
+				input.addEventListener('blur', () => {
+					validateField(input, validator, errorElement);
+				});
+			});
+		}
+
+		function validateField(input, validator, errorElement) {
+			const error = validator(input.value);
+			if (error) {
+				input.classList.add('error');
+				input.classList.remove('success');
+				errorElement.textContent = error;
+			} else {
+				input.classList.remove('error');
+				input.classList.add('success');
+				errorElement.textContent = '';
+			}
+		}
+
+		function validateForm() {
+			const inputs = [
+				{ id: 'editFirstName', validator: validateFirstName, errorId: 'firstNameError' },
+				{ id: 'editLastName', validator: validateLastName, errorId: 'lastNameError' },
+				{ id: 'editEmail', validator: validateEmail, errorId: 'emailError' },
+				{ id: 'editPhone', validator: validatePhone, errorId: 'phoneError' },
+				{ id: 'editNic', validator: validateNIC, errorId: 'nicError' },
+				{ id: 'editPassword', validator: validatePassword, errorId: 'passwordError' }
+			];
+
+			const errors = [];
+			let isValid = true;
+
+			inputs.forEach(({ id, validator, errorId }) => {
+				const input = document.getElementById(id);
+				const errorElement = document.getElementById(errorId);
+				const error = validator(input.value);
+				
+				if (error) {
+					input.classList.add('error');
+					input.classList.remove('success');
+					errorElement.textContent = error;
+					errors.push(error);
+					isValid = false;
+				} else {
+					input.classList.remove('error');
+					input.classList.add('success');
+					errorElement.textContent = '';
+				}
+			});
+
+			// Show validation summary if there are errors
+			const validationSummary = document.getElementById('validationSummary');
+			const validationErrors = document.getElementById('validationErrors');
+			
+			if (!isValid) {
+				validationErrors.innerHTML = errors.map(error => `<li>${error}</li>`).join('');
+				validationSummary.classList.add('show');
+			} else {
+				validationSummary.classList.remove('show');
+			}
+
+			return isValid;
+		}
+
+		function clearValidationErrors() {
+			const inputs = [
+				'editFirstName', 'editLastName', 'editEmail', 
+				'editPhone', 'editNic', 'editPassword'
+			];
+			const errorIds = [
+				'firstNameError', 'lastNameError', 'emailError', 
+				'phoneError', 'nicError', 'passwordError'
+			];
+
+			inputs.forEach((inputId, index) => {
+				const input = document.getElementById(inputId);
+				const errorElement = document.getElementById(errorIds[index]);
+				
+				input.classList.remove('error', 'success');
+				errorElement.textContent = '';
+			});
+
+			// Hide validation summary
+			const validationSummary = document.getElementById('validationSummary');
+			validationSummary.classList.remove('show');
+		}
+
+		async function saveProfileChanges() {
+			// Validate form before submission
+			if (!validateForm()) {
+				showMessage('Please fix the validation errors before saving.', 'error');
+				return;
+			}
+
+			try {
+				const updates = {
+					firstName: document.getElementById('editFirstName').value.trim(),
+					lastName: document.getElementById('editLastName').value.trim(),
+					email: document.getElementById('editEmail').value.trim(),
+					phone: document.getElementById('editPhone').value.trim(),
+					nic: document.getElementById('editNic').value.trim()
+				};
+
+				const password = document.getElementById('editPassword').value;
+				if (password) updates.password = password;
+
+				const response = await fetch(`${API}/${currentUser.id}`, {
+					method: 'PUT',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(updates)
+				});
+
+				if (response.ok) {
+					const saved = await response.json();
+					currentUser = saved;
+					localStorage.setItem('currentUser', JSON.stringify(saved));
+					
+					// Switch back to view mode
+					document.getElementById('viewMode').classList.remove('hidden');
+					document.getElementById('editMode').classList.add('hidden');
+					document.getElementById('editToggle').classList.remove('hidden');
+					
+					// Reload profile data
+					loadUserProfile();
+					
+					showMessage('Profile updated successfully!', 'success');
+				} else {
+					showMessage('Failed to update profile. Please try again.', 'error');
+				}
+			} catch (error) {
+				console.error('Error updating profile:', error);
+				showMessage('Error updating profile. Please try again.', 'error');
+			}
+		}
+
+
+
+		async function requestRefund(bookingId, paymentId) {
+			try {
+				// Disable the refund button immediately
+				const refundButton = event.target;
+				refundButton.disabled = true;
+				refundButton.textContent = 'Processing...';
+				
+				// Update payment status to "refund requested"
+				const response = await fetch(`${PAYMENTS_API}/${paymentId}/status`, {
+					method: 'PUT',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({
+						paymentStatus: 'refund requested'
+					})
+				});
+				
+				if (response.ok) {
+					// Update the button to show refund requested
+					refundButton.textContent = 'Refund Requested';
+					refundButton.style.background = 'rgba(107,114,128,.2)';
+					refundButton.style.color = '#6b7280';
+					refundButton.style.borderColor = 'rgba(107,114,128,.3)';
+					
+					// Update the booking status in the UI
+					const bookingCard = refundButton.closest('.booking-card');
+					const statusElement = bookingCard.querySelector('.booking-status');
+					statusElement.className = 'booking-status refund-requested';
+					statusElement.textContent = 'Refund Requested';
+					
+					showMessage('Refund request submitted successfully!', 'success');
+				} else {
+					// Re-enable button if request failed
+					refundButton.disabled = false;
+					refundButton.textContent = 'Request Refund';
+					showMessage('Failed to submit refund request. Please try again.', 'error');
+				}
+			} catch (error) {
+				console.error('Error requesting refund:', error);
+				// Re-enable button if request failed
+				const refundButton = event.target;
+				refundButton.disabled = false;
+				refundButton.textContent = 'Request Refund';
+				showMessage('Error submitting refund request. Please try again.', 'error');
+			}
+		}
+
+		function showMessage(message, type) {
+			const container = document.getElementById('messageContainer');
+			const messageDiv = document.createElement('div');
+			messageDiv.className = `message ${type}`;
+			messageDiv.textContent = message;
+			
+			container.innerHTML = '';
+			container.appendChild(messageDiv);
+			
+			setTimeout(() => {
+				messageDiv.remove();
+			}, 5000);
+		}
+	</script>
+</body>
+</html>

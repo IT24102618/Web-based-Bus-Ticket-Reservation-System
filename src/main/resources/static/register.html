@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Register - Bus Reservation</title>
+	<style>
+		:root {
+			--bg: #0f172a;
+			--card: #111827;
+			--muted: #94a3b8;
+			--text: #e5e7eb;
+			--primary: #22c55e;
+			--primary-600: #16a34a;
+			--input: #1f2937;
+			--ring: rgba(34, 197, 94, 0.35);
+		}
+		* { box-sizing: border-box; }
+		html, body { height: 100%; }
+		body {
+			margin: 0;
+			font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+			color: var(--text);
+			background: radial-gradient(1200px 800px at 80% -20%, #0b1220 20%, var(--bg) 60%),
+				linear-gradient(0deg, #0b1220, var(--bg));
+			background-attachment: fixed;
+			display: grid;
+			place-items: center;
+			padding: 24px;
+		}
+		.card {
+			width: 100%;
+			max-width: 520px;
+			background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+			backdrop-filter: blur(10px);
+			border: 1px solid rgba(148,163,184,0.15);
+			border-radius: 14px;
+			box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+			padding: 28px;
+		}
+		.header {
+			display: flex;
+			flex-direction: column;
+			gap: 6px;
+			margin-bottom: 18px;
+		}
+		.header h1 { font-size: 22px; margin: 0; }
+		.header p { color: var(--muted); margin: 0; }
+		.form { display: grid; gap: 14px; }
+		.row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+		.label { font-size: 13px; color: var(--muted); margin-bottom: 6px; display: block; }
+		.input {
+			width: 100%;
+			padding: 12px 14px;
+			border-radius: 10px;
+			border: 1px solid rgba(148,163,184,0.25);
+			background: var(--input);
+			color: var(--text);
+			outline: none;
+			transition: box-shadow .2s, border-color .2s;
+		}
+		.input:focus { box-shadow: 0 0 0 4px var(--ring); border-color: var(--primary); }
+		.actions { display: grid; gap: 10px; margin-top: 6px; }
+		.button {
+			appearance: none;
+			border: 0;
+			padding: 12px 16px;
+			border-radius: 10px;
+			background: linear-gradient(180deg, var(--primary), var(--primary-600));
+			color: white;
+			font-weight: 600;
+			cursor: pointer;
+			transition: transform .02s ease-in-out, filter .2s;
+		}
+		.button:hover { filter: brightness(1.05); }
+		.button:active { transform: translateY(1px); }
+		.footer { text-align: center; color: var(--muted); font-size: 13px; margin-top: 8px; }
+		.link { color: var(--primary); text-decoration: none; }
+		.link:hover { text-decoration: underline; }
+		.error{color:#ef4444;font-size:12px;margin-top:4px;display:block}
+		.input.error{border-color:#ef4444;box-shadow:0 0 0 4px rgba(239,68,68,.2)}
+		.input.success{border-color:#10b981;box-shadow:0 0 0 4px rgba(16,185,129,.2)}
+		.validation-summary{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:12px;margin-bottom:16px;display:none}
+		.validation-summary.show{display:block}
+		.validation-summary ul{margin:0;padding-left:20px}
+		.validation-summary li{color:#ef4444;font-size:14px;margin-bottom:4px}
+	</style>
+</head>
+<body>
+	<div class="card">
+		<div class="header">
+			<h1>Create your account</h1>
+			<p>Join and book your next ride with ease</p>
+		</div>
+		<form class="form" id="registerForm">
+			<div id="registerValidationSummary" class="validation-summary">
+				<strong>Please fix the following errors:</strong>
+				<ul id="registerValidationErrors"></ul>
+			</div>
+			<div class="row">
+				<div>
+					<label class="label" for="firstName">First name</label>
+					<input class="input" type="text" id="firstName" placeholder="Jane" required />
+					<span id="firstNameError" class="error"></span>
+				</div>
+				<div>
+					<label class="label" for="lastName">Last name</label>
+					<input class="input" type="text" id="lastName" placeholder="Doe" required />
+					<span id="lastNameError" class="error"></span>
+				</div>
+			</div>
+
+			<div class="row">
+				<div>
+					<label class="label" for="phone">Phone</label>
+					<input class="input" type="tel" id="phone" placeholder="1234567890" required />
+					<span id="phoneError" class="error"></span>
+				</div>
+				<div>
+					<label class="label" for="email">Email</label>
+					<input class="input" type="email" id="email" placeholder="you@example.com" required />
+					<span id="emailError" class="error"></span>
+				</div>
+			</div>
+
+			<label class="label" for="nic">NIC Number</label>
+			<input class="input" type="text" id="nic" placeholder="123456789012 or 1234567890V" required />
+			<span id="nicError" class="error"></span>
+
+			<label class="label" for="password">Password</label>
+			<input class="input" type="password" id="password" placeholder="••••••••" required />
+			<span id="passwordError" class="error"></span>
+
+			<div class="actions">
+				<button type="submit" class="button">Create account</button>
+				<div class="footer">Already have an account? <a href="login.html" class="link">Sign in</a></div>
+			</div>
+		</form>
+	</div>
+
+	<script>
+		const API = 'http://localhost:8080/api/users';
+
+		// Initialize validation on page load
+		document.addEventListener('DOMContentLoaded', () => {
+			setupRegisterValidation();
+		});
+
+		document.getElementById('registerForm').addEventListener('submit', async (e) => {
+			e.preventDefault();
+			await registerUser();
+		});
+
+		// Validation functions
+		function validateFirstName(firstName) {
+			const trimmed = firstName.trim();
+			if (!trimmed) {
+				return 'First name is required';
+			}
+			if (trimmed.length < 2) {
+				return 'First name must be at least 2 characters long';
+			}
+			if (trimmed.length > 50) {
+				return 'First name must be less than 50 characters';
+			}
+			if (!/^[a-zA-Z\s'-]+$/.test(trimmed)) {
+				return 'First name can only contain letters, spaces, hyphens, and apostrophes';
+			}
+			return null;
+		}
+
+		function validateLastName(lastName) {
+			const trimmed = lastName.trim();
+			if (!trimmed) {
+				return 'Last name is required';
+			}
+			if (trimmed.length < 2) {
+				return 'Last name must be at least 2 characters long';
+			}
+			if (trimmed.length > 50) {
+				return 'Last name must be less than 50 characters';
+			}
+			if (!/^[a-zA-Z\s'-]+$/.test(trimmed)) {
+				return 'Last name can only contain letters, spaces, hyphens, and apostrophes';
+			}
+			return null;
+		}
+
+		function validateEmail(email) {
+			const trimmed = email.trim();
+			if (!trimmed) {
+				return 'Email is required';
+			}
+			const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+			if (!emailRegex.test(trimmed)) {
+				return 'Please enter a valid email address';
+			}
+			if (trimmed.length > 100) {
+				return 'Email must be less than 100 characters';
+			}
+			return null;
+		}
+
+		function validatePhone(phone) {
+			const trimmed = phone.trim();
+			if (!trimmed) {
+				return 'Phone number is required';
+			}
+			// Remove all non-digit characters for validation
+			const digitsOnly = trimmed.replace(/\D/g, '');
+			if (digitsOnly.length !== 10) {
+				return 'Phone number must be exactly 10 digits';
+			}
+			// Check for valid phone format (allows various formats but must be 10 digits)
+			const phoneRegex = /^[0-9\s\-\(\)]{10,15}$/;
+			if (!phoneRegex.test(trimmed)) {
+				return 'Please enter a valid phone number';
+			}
+			return null;
+		}
+
+		function validateNIC(nic) {
+			const trimmed = nic.trim();
+			if (!trimmed) {
+				return 'NIC number is required';
+			}
+			// Sri Lankan NIC validation (12 digits OR 10 digits with V at end)
+			const newNicRegex = /^[0-9]{12}$/;
+			const oldNicRegex = /^[0-9]{10}V$/i;
+			
+			if (!newNicRegex.test(trimmed) && !oldNicRegex.test(trimmed)) {
+				return 'Please enter a valid NIC number (12 digits or 10 digits with V)';
+			}
+			return null;
+		}
+
+		function validatePassword(password) {
+			if (!password) {
+				return 'Password is required';
+			}
+			if (password.length < 8) {
+				return 'Password must be at least 8 characters long';
+			}
+			if (password.length > 100) {
+				return 'Password must be less than 100 characters';
+			}
+			// Check for at least one uppercase, one lowercase, and one number
+			const hasUpperCase = /[A-Z]/.test(password);
+			const hasLowerCase = /[a-z]/.test(password);
+			const hasNumbers = /\d/.test(password);
+			
+			if (!hasUpperCase || !hasLowerCase || !hasNumbers) {
+				return 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
+			}
+			return null;
+		}
+
+		function setupRegisterValidation() {
+			const inputs = [
+				{ id: 'firstName', validator: validateFirstName, errorId: 'firstNameError' },
+				{ id: 'lastName', validator: validateLastName, errorId: 'lastNameError' },
+				{ id: 'email', validator: validateEmail, errorId: 'emailError' },
+				{ id: 'phone', validator: validatePhone, errorId: 'phoneError' },
+				{ id: 'nic', validator: validateNIC, errorId: 'nicError' },
+				{ id: 'password', validator: validatePassword, errorId: 'passwordError' }
+			];
+
+			inputs.forEach(({ id, validator, errorId }) => {
+				const input = document.getElementById(id);
+				const errorElement = document.getElementById(errorId);
+
+				// Real-time validation on input
+				input.addEventListener('input', () => {
+					validateField(input, validator, errorElement);
+				});
+
+				// Validation on blur
+				input.addEventListener('blur', () => {
+					validateField(input, validator, errorElement);
+				});
+			});
+
+			// Add input restrictions for phone
+			document.getElementById('phone').addEventListener('input', function(e) {
+				// Allow digits, spaces, hyphens, parentheses only (no plus sign for 10-digit format)
+				e.target.value = e.target.value.replace(/[^0-9\s\-\(\)]/g, '');
+			});
+
+			// Add input restrictions for NIC
+			document.getElementById('nic').addEventListener('input', function(e) {
+				let value = e.target.value.toUpperCase();
+				
+				// Remove any non-digit characters except V at the end
+				if (value.length <= 10) {
+					// Only digits for first 10 characters
+					value = value.replace(/[^0-9]/g, '');
+				} else if (value.length === 11) {
+					// Check if 11th character is V (old format) or digit (new format)
+					const first10 = value.substring(0, 10).replace(/[^0-9]/g, '');
+					const lastChar = value.charAt(10);
+					
+					if (lastChar === 'V') {
+						// Old format: 10 digits + V
+						value = first10 + 'V';
+					} else if (/[0-9]/.test(lastChar)) {
+						// New format: continuing with digits
+						value = first10 + lastChar;
+					} else {
+						// Invalid character, keep only digits
+						value = first10;
+					}
+				} else if (value.length === 12) {
+					// For 12th character, only allow digits (new format)
+					const first11 = value.substring(0, 11).replace(/[^0-9]/g, '');
+					const lastChar = value.charAt(11);
+					
+					if (/[0-9]/.test(lastChar)) {
+						value = first11 + lastChar;
+					} else {
+						value = first11;
+					}
+				} else {
+					// Limit to 12 characters max
+					value = value.substring(0, 12);
+				}
+				
+				e.target.value = value;
+			});
+		}
+
+		function validateField(input, validator, errorElement) {
+			const error = validator(input.value);
+			if (error) {
+				input.classList.add('error');
+				input.classList.remove('success');
+				errorElement.textContent = error;
+			} else {
+				input.classList.remove('error');
+				input.classList.add('success');
+				errorElement.textContent = '';
+			}
+		}
+
+		function validateRegisterForm() {
+			const inputs = [
+				{ id: 'firstName', validator: validateFirstName, errorId: 'firstNameError' },
+				{ id: 'lastName', validator: validateLastName, errorId: 'lastNameError' },
+				{ id: 'email', validator: validateEmail, errorId: 'emailError' },
+				{ id: 'phone', validator: validatePhone, errorId: 'phoneError' },
+				{ id: 'nic', validator: validateNIC, errorId: 'nicError' },
+				{ id: 'password', validator: validatePassword, errorId: 'passwordError' }
+			];
+
+			const errors = [];
+			let isValid = true;
+
+			inputs.forEach(({ id, validator, errorId }) => {
+				const input = document.getElementById(id);
+				const errorElement = document.getElementById(errorId);
+				const error = validator(input.value);
+				
+				if (error) {
+					input.classList.add('error');
+					input.classList.remove('success');
+					errorElement.textContent = error;
+					errors.push(error);
+					isValid = false;
+				} else {
+					input.classList.remove('error');
+					input.classList.add('success');
+					errorElement.textContent = '';
+				}
+			});
+
+			// Show validation summary if there are errors
+			const validationSummary = document.getElementById('registerValidationSummary');
+			const validationErrors = document.getElementById('registerValidationErrors');
+			
+			if (!isValid) {
+				validationErrors.innerHTML = errors.map(error => `<li>${error}</li>`).join('');
+				validationSummary.classList.add('show');
+			} else {
+				validationSummary.classList.remove('show');
+			}
+
+			return isValid;
+		}
+
+		function clearRegisterValidationErrors() {
+			const inputs = [
+				'firstName', 'lastName', 'email', 
+				'phone', 'nic', 'password'
+			];
+			const errorIds = [
+				'firstNameError', 'lastNameError', 'emailError', 
+				'phoneError', 'nicError', 'passwordError'
+			];
+
+			inputs.forEach((inputId, index) => {
+				const input = document.getElementById(inputId);
+				const errorElement = document.getElementById(errorIds[index]);
+				
+				input.classList.remove('error', 'success');
+				errorElement.textContent = '';
+			});
+
+			// Hide validation summary
+			const validationSummary = document.getElementById('registerValidationSummary');
+			validationSummary.classList.remove('show');
+		}
+
+		async function registerUser() {
+			// Validate form before submission
+			if (!validateRegisterForm()) {
+				return;
+			}
+
+			// Get form values
+			const firstName = document.getElementById('firstName').value.trim();
+			const lastName = document.getElementById('lastName').value.trim();
+			const phone = document.getElementById('phone').value.trim();
+			const email = document.getElementById('email').value.trim();
+			const nic = document.getElementById('nic').value.trim();
+			const password = document.getElementById('password').value;
+
+			const user = {
+				firstName: firstName,
+				lastName: lastName,
+				phone: phone,
+				email: email,
+				nic: nic,
+				password: password
+			};
+
+			const res = await fetch(`${API}/register`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(user)
+			});
+			if (res.ok) {
+				alert('Registered successfully!');
+				window.location.href = 'login.html';
+			} else {
+				alert('Registration failed');
+			}
+		}
+	</script>
+</body>
+</html>

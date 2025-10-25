@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>IT Support Dashboard</title>
+	<style>
+		body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica Neue,Arial;background:#0f172a;color:#e5e7eb}
+		.layout{display:flex;min-height:100vh}
+		.sidebar{width:240px;background:#0c1324;border-right:1px solid rgba(148,163,184,.15);padding:16px;position:sticky;top:0;height:100vh}
+		.brand{font-weight:800;margin:0 0 14px}
+		.menu{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+		.menu a{display:block;color:#e5e7eb;text-decoration:none;padding:10px 12px;border-radius:10px}
+		.menu a:hover{background:rgba(148,163,184,.12)}
+		.content{flex:1;display:grid;place-items:center;padding:24px}
+		.hero{max-width:800px;text-align:center}
+		.hero h1{font-size:22px;margin:0}
+		.link{color:#22c55e;text-decoration:none}
+		.topbar{position:sticky;top:0;z-index:5;background:rgba(12,19,36,.85);backdrop-filter:blur(8px);border-bottom:1px solid rgba(148,163,184,.15);display:flex;justify-content:flex-end;align-items:center;padding:10px 16px}
+		.button{appearance:none;border:0;padding:10px 12px;border-radius:10px;background:linear-gradient(180deg,#22c55e,#16a34a);color:#fff;font-weight:600;cursor:pointer}
+	</style>
+</head>
+<body>
+	<div class="topbar">
+		<button id="signout" class="button">Sign out</button>
+	</div>
+	<div class="layout">
+		<aside class="sidebar">
+			<h2 class="brand">IT Support</h2>
+			<ul class="menu">
+				<li><a href="admin-users.html">User Management</a></li>
+			</ul>
+		</aside>
+		<main class="content">
+			<div class="hero">
+				<h1>Welcome to Bus Tticket Reservation System Admin Portal</h1>
+				<p style="margin-top:8px"><a class="link" href="index.html">Back to home</a></p>
+			</div>
+		</main>
+	</div>
+	<script>
+		document.getElementById('signout').addEventListener('click', ()=>{
+			localStorage.removeItem('currentUser');
+			window.location.href = 'login.html';
+		});
+	</script>
+</body>
+</html>
+
+

@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Route Management</title>
+    <style>
+        :root { --bg:#0f172a; --card:#111827; --muted:#94a3b8; --text:#e5e7eb; --primary:#22c55e; --primary-600:#16a34a; --input:#1f2937; --ring:rgba(34,197,94,.35); }
+        html,body{height:100%}
+        body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica Neue,Arial;color:var(--text);background:linear-gradient(0deg,#0b1220,var(--bg));}
+        .container{max-width:1100px;margin:32px auto;padding:0 16px;}
+        .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+        .h1{font-size:22px;margin:0}
+        .toolbar{display:flex;gap:8px}
+        .input{padding:10px 12px;border-radius:10px;border:1px solid rgba(148,163,184,.25);background:var(--input);color:var(--text);outline:none}
+        .table{width:100%;border-collapse:separate;border-spacing:0 8px}
+        .tr{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01));backdrop-filter:blur(8px);border:1px solid rgba(148,163,184,.15)}
+        .tr td,.tr th{padding:12px 10px}
+        .tr th{color:var(--muted);font-weight:600;text-align:left}
+        .actions{display:flex;gap:8px}
+        .button{appearance:none;border:0;padding:10px 12px;border-radius:10px;background:linear-gradient(180deg,var(--primary),var(--primary-600));color:#fff;font-weight:600;cursor:pointer}
+        .button.secondary{background:#334155}
+        .badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#334155;color:#e5e7eb;font-size:12px}
+        .modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center}
+        .modal .card{width:100%;max-width:520px;background:#ffffff;border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:20px;color:#0f172a}
+        .grid{display:grid;gap:12px}
+        .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+        .label{font-size:13px;color:#334155}
+        .link{color:var(--primary);text-decoration:none}
+        .error{color:#ef4444;font-size:12px;margin-top:4px;display:block}
+        .input.error{border-color:#ef4444;box-shadow:0 0 0 4px rgba(239,68,68,.2)}
+        .input.success{border-color:#10b981;box-shadow:0 0 0 4px rgba(16,185,129,.2)}
+        .validation-summary{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:12px;margin-bottom:16px;display:none}
+        .validation-summary.show{display:block}
+        .validation-summary ul{margin:0;padding-left:20px}
+        .validation-summary li{color:#ef4444;font-size:14px;margin-bottom:4px}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="h1">Route Management</h1>
+            <div class="toolbar">
+                <button class="button" id="addRoute">Add Route</button>
+                <input id="search" class="input" placeholder="Search by From/To" />
+                <button class="button secondary" id="refresh">Refresh</button>
+            </div>
+        </div>
+
+        <table class="table">
+            <thead class="tr">
+                <tr>
+                    <th>Route ID</th>
+                    <th>District</th>
+                    <th>From Location</th>
+                    <th>To Location</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
+    </div>
+
+    <div id="modal" class="modal">
+        <div class="card">
+            <h3 id="modalTitle" style="margin-top:0">Add Route</h3>
+            <div id="routeValidationSummary" class="validation-summary">
+                <strong>Please fix the following errors:</strong>
+                <ul id="routeValidationErrors"></ul>
+            </div>
+            <div class="grid">
+                <div>
+                    <div class="label">District</div>
+                    <select id="district" class="input">
+                        <option value="">Select District</option>
+                    </select>
+                    <span id="districtError" class="error"></span>
+                </div>
+                <div>
+                    <div class="label">From Location</div>
+                    <select id="fromStand" class="input" disabled>
+                        <option value="">Select From Location</option>
+                    </select>
+                    <span id="fromStandError" class="error"></span>
+                </div>
+                <div>
+                    <div class="label">To Location</div>
+                    <select id="toStand" class="input" disabled>
+                        <option value="">Select To Location</option>
+                    </select>
+                    <span id="toStandError" class="error"></span>
+                </div>
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+                <button class="button secondary" id="cancel">Cancel</button>
+                <button class="button" id="save">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="deleteModal" class="modal">
+        <div class="card">
+            <h3 style="margin-top:0">Delete Route</h3>
+            <div id="deleteDetails" style="margin:8px 0 12px;color:#334155"></div>
+            <div id="deleteMessage" style="margin:8px 0 12px; display:none; color:#b91c1c; font-weight:600">Are you sure you want to delete?</div>
+            <div id="deleteActions" style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+                <button class="button secondary" id="deleteCancel">Cancel</button>
+                <button class="button" id="deletePrompt">Delete</button>
+            </div>
+            <div id="confirmActions" style="display:none;gap:8px;justify-content:flex-end;margin-top:16px">
+                <button class="button secondary" id="deleteNo">No</button>
+                <button class="button" id="deleteYes">Yes</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = 'http://localhost:8080/api/routes';
+        const DISTRICTS = [
+            "Colombo","Gampaha","Kalutara","Kandy","Matale","Nuwara Eliya",
+            "Galle","Matara","Hambantota","Jaffna","Kilinochchi","Mannar",
+            "Vavuniya","Mullaitivu","Batticaloa","Ampara","Trincomalee",
+            "Kurunegala","Puttalam","Anuradhapura","Polonnaruwa","Badulla",
+            "Monaragala","Ratnapura","Kegalle"
+        ];
+
+        // District to stands mapping
+        const DISTRICT_STANDS = {
+            "Galle": [
+                "Galle", "Udugama", "Hikkaduwa", "Ambalangoda", "Bentota", "Koggala", 
+                "Unawatuna", "Weligama", "Mirissa", "Ahangama", "Kosgoda", "Balapitiya"
+            ],
+            "Colombo": [
+                "Colombo", "Fort", "Pettah", "Bambalapitiya", "Wellawatta", "Dehiwala", 
+                "Mount Lavinia", "Moratuwa", "Panadura", "Kalutara", "Wattala", "Negombo"
+            ],
+            "Kandy": [
+                "Kandy", "Peradeniya", "Kadugannawa", "Gampola", "Nawalapitiya", 
+                "Talawakele", "Hatton", "Nuwara Eliya", "Matale", "Dambulla"
+            ],
+            "Matara": [
+                "Matara", "Weligama", "Mirissa", "Dikwella", "Tangalle", "Hambantota", 
+                "Tissamaharama", "Kataragama", "Weeraketiya", "Beliatte"
+            ],
+            "Jaffna": [
+                "Jaffna", "Point Pedro", "Chavakachcheri", "Kilinochchi", "Mullaitivu", 
+                "Vavuniya", "Mannar", "Poonakari", "Nallur", "Kopay"
+            ],
+            "Kurunegala": [
+                "Kurunegala", "Kuliyapitiya", "Nikaweratiya", "Puttalam", "Chilaw", 
+                "Anuradhapura", "Polonnaruwa", "Dambulla", "Maho", "Galgamuwa"
+            ],
+            "Badulla": [
+                "Badulla", "Bandarawela", "Haputale", "Ella", "Wellawaya", "Monaragala", 
+                "Bibile", "Siyambalanduwa", "Ampara", "Kalmunai"
+            ],
+            "Ratnapura": [
+                "Ratnapura", "Balangoda", "Eheliyagoda", "Kuruwita", "Embilipitiya", 
+                "Pelmadulla", "Kahawatta", "Nivithigala", "Rakwana", "Godakawela"
+            ],
+            "Kegalle": [
+                "Kegalle", "Mawanella", "Rambukkana", "Warakapola", "Galigamuwa", 
+                "Aranayake", "Bulathkohupitiya", "Dehiowita", "Deraniyagala", "Yatiyantota"
+            ],
+            "Kalutara": [
+                "Kalutara", "Panadura", "Moratuwa", "Beruwala", "Aluthgama", "Bentota", 
+                "Kosgoda", "Ahungalla", "Balapitiya", "Ambalangoda"
+            ],
+            "Gampaha": [
+                "Gampaha", "Negombo", "Wattala", "Ja-Ela", "Katunayake", "Seeduwa", 
+                "Minuwangoda", "Veyangoda", "Nittambuwa", "Mirigama"
+            ],
+            "Hambantota": [
+                "Hambantota", "Tangalle", "Tissamaharama", "Kataragama", "Weeraketiya", 
+                "Beliatte", "Ambalantota", "Ranna", "Katuwana", "Angunakolapelessa"
+            ],
+            "Batticaloa": [
+                "Batticaloa", "Kalmunai", "Ampara", "Akkaraipattu", "Sainthamaruthu", 
+                "Kattankudy", "Eravur", "Valaichchenai", "Chenkalady", "Kokkadichcholai"
+            ],
+            "Trincomalee": [
+                "Trincomalee", "Kinniya", "Muttur", "Kantalai", "Seruwila", "Gomarankadawala", 
+                "Kuchchaveli", "Nilaveli", "Uppuveli", "Koneswaram"
+            ],
+            "Anuradhapura": [
+                "Anuradhapura", "Polonnaruwa", "Dambulla", "Sigiriya", "Habarana", 
+                "Kekirawa", "Mihintale", "Thambuttegama", "Eppawala", "Nochchiyagama"
+            ],
+            "Polonnaruwa": [
+                "Polonnaruwa", "Hingurakgoda", "Kaduruwela", "Medirigiriya", "Lankapura", 
+                "Welikanda", "Dimbulagala", "Manampitiya", "Elahara", "Giritale"
+            ],
+            "Nuwara Eliya": [
+                "Nuwara Eliya", "Hatton", "Talawakele", "Nanu Oya", "Ragala", "Welimada", 
+                "Kotagala", "Maskeliya", "Norwood", "Lindula"
+            ],
+            "Matale": [
+                "Matale", "Dambulla", "Sigiriya", "Habarana", "Naula", "Rattota", 
+                "Ukuwela", "Palapathwela", "Laggala", "Wilgamuwa"
+            ],
+            "Mannar": [
+                "Mannar", "Pesalai", "Nanattan", "Madhu", "Murunkan", "Vankalai", 
+                "Thalaimannar", "Erukkalampiddy", "Pallimunai", "Uyilankulam"
+            ],
+            "Vavuniya": [
+                "Vavuniya", "Omanthai", "Cheddikulam", "Nedunkerny", "Puliyankulam", 
+                "Mamaduwa", "Poovarasankulam", "Periyamadu", "Kovilkulam", "Pampaimadu"
+            ],
+            "Mullaitivu": [
+                "Mullaitivu", "Puthukkudiyiruppu", "Oddusuddan", "Mulliyawalai", 
+                "Kokkuthoduvai", "Alampil", "Kumulamunai", "Nayaru", "Vellamullivaikkal", "Karunaadu"
+            ],
+            "Kilinochchi": [
+                "Kilinochchi", "Pallai", "Iranamadu", "Paranthan", "Akkarayankulam", 
+                "Kandawalai", "Poonakari", "Mullaitivu", "Elephant Pass", "Chundikulam"
+            ],
+            "Ampara": [
+                "Ampara", "Kalmunai", "Akkaraipattu", "Sainthamaruthu", "Sammanthurai", 
+                "Pottuvil", "Arugam Bay", "Lahugala", "Uhana", "Maha Oya"
+            ],
+            "Puttalam": [
+                "Puttalam", "Chilaw", "Wennappuwa", "Marawila", "Nattandiya", "Madampe", 
+                "Anamaduwa", "Kalpitiya", "Vanathavilluwa", "Karuwalagaswewa"
+            ],
+            "Monaragala": [
+                "Monaragala", "Bibile", "Siyambalanduwa", "Wellawaya", "Buttala", 
+                "Kataragama", "Tissamaharama", "Hambantota", "Tanamalwila", "Medagama"
+            ]
+        };
+
+        const tbody = document.getElementById('tbody');
+        const modal = document.getElementById('modal');
+        const deleteModal = document.getElementById('deleteModal');
+        let current = null;
+        let deleteTarget = null;
+
+        // Initialize validation and searchable dropdowns on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            setupRouteValidation();
+            initializeSearchableDropdowns();
+        });
+
+        document.getElementById('refresh').addEventListener('click', load);
+        document.getElementById('addRoute').addEventListener('click', openAdd);
+        document.getElementById('cancel').addEventListener('click', () => {
+            modal.style.display = 'none';
+            clearRouteValidationErrors();
+        });
+        document.getElementById('save').addEventListener('click', save);
+        document.getElementById('search').addEventListener('input', filter);
+
+        document.getElementById('deleteCancel').addEventListener('click', ()=>{ deleteModal.style.display='none'; deleteTarget=null; });
+        document.getElementById('deletePrompt').addEventListener('click', ()=>{
+            document.getElementById('deleteMessage').style.display = 'block';
+            document.getElementById('deleteActions').style.display = 'none';
+            document.getElementById('confirmActions').style.display = 'flex';
+        });
+        document.getElementById('deleteNo').addEventListener('click', ()=>{
+            document.getElementById('deleteMessage').style.display = 'none';
+            document.getElementById('deleteActions').style.display = 'flex';
+            document.getElementById('confirmActions').style.display = 'none';
+        });
+        document.getElementById('deleteYes').addEventListener('click', async ()=>{
+            if(!deleteTarget) return;
+            const res = await fetch(`${API}/${deleteTarget.routeId}`, { method: 'DELETE' });
+            if(res.ok){ deleteModal.style.display='none'; deleteTarget=null; load(); }
+            else{ alert('Delete failed'); }
+        });
+
+        load();
+
+        // Validation functions
+        function validateDistrict(district) {
+            if (!district) {
+                return 'District is required';
+            }
+            return null;
+        }
+
+        function validateFromLocation(fromLocation) {
+            if (!fromLocation) {
+                return 'From location is required';
+            }
+            return null;
+        }
+
+        function validateToLocation(toLocation) {
+            if (!toLocation) {
+                return 'To location is required';
+            }
+            return null;
+        }
+
+        function validateRouteLocations(fromLocation, toLocation) {
+            if (fromLocation && toLocation && fromLocation === toLocation) {
+                return 'From and To locations cannot be the same';
+            }
+            return null;
+        }
+
+        function setupRouteValidation() {
+            const inputs = [
+                { id: 'district', validator: validateDistrict, errorId: 'districtError' },
+                { id: 'fromStand', validator: validateFromLocation, errorId: 'fromStandError' },
+                { id: 'toStand', validator: validateToLocation, errorId: 'toStandError' }
+            ];
+
+            inputs.forEach(({ id, validator, errorId }) => {
+                const input = document.getElementById(id);
+                const errorElement = document.getElementById(errorId);
+
+                // Real-time validation on change
+                input.addEventListener('change', () => {
+                    validateRouteField(input, validator, errorElement);
+                });
+
+                // Validation on blur
+                input.addEventListener('blur', () => {
+                    validateRouteField(input, validator, errorElement);
+                });
+            });
+        }
+
+        function validateRouteField(input, validator, errorElement) {
+            const error = validator(input.value);
+            if (error) {
+                input.classList.add('error');
+                input.classList.remove('success');
+                errorElement.textContent = error;
+            } else {
+                input.classList.remove('error');
+                input.classList.add('success');
+                errorElement.textContent = '';
+            }
+        }
+
+        function validateRouteForm() {
+            const district = document.getElementById('district').value;
+            const fromLocation = document.getElementById('fromStand').value;
+            const toLocation = document.getElementById('toStand').value;
+            
+            const inputs = [
+                { id: 'district', validator: validateDistrict, errorId: 'districtError' },
+                { id: 'fromStand', validator: validateFromLocation, errorId: 'fromStandError' },
+                { id: 'toStand', validator: validateToLocation, errorId: 'toStandError' }
+            ];
+
+            const errors = [];
+            let isValid = true;
+
+            inputs.forEach(({ id, validator, errorId }) => {
+                const input = document.getElementById(id);
+                const errorElement = document.getElementById(errorId);
+                const error = validator(input.value);
+                
+                if (error) {
+                    input.classList.add('error');
+                    input.classList.remove('success');
+                    errorElement.textContent = error;
+                    errors.push(error);
+                    isValid = false;
+                } else {
+                    input.classList.remove('error');
+                    input.classList.add('success');
+                    errorElement.textContent = '';
+                }
+            });
+
+            // Check if locations are the same
+            const sameLocationError = validateRouteLocations(fromLocation, toLocation);
+            if (sameLocationError) {
+                errors.push(sameLocationError);
+                isValid = false;
+            }
+
+            // Show validation summary if there are errors
+            const validationSummary = document.getElementById('routeValidationSummary');
+            const validationErrors = document.getElementById('routeValidationErrors');
+            
+            if (!isValid) {
+                validationErrors.innerHTML = errors.map(error => `<li>${error}</li>`).join('');
+                validationSummary.classList.add('show');
+            } else {
+                validationSummary.classList.remove('show');
+            }
+
+            return isValid;
+        }
+
+        function clearRouteValidationErrors() {
+            const inputs = ['district', 'fromStand', 'toStand'];
+            const errorIds = ['districtError', 'fromStandError', 'toStandError'];
+
+            inputs.forEach((inputId, index) => {
+                const input = document.getElementById(inputId);
+                const errorElement = document.getElementById(errorIds[index]);
+                
+                input.classList.remove('error', 'success');
+                errorElement.textContent = '';
+            });
+
+            // Hide validation summary
+            const validationSummary = document.getElementById('routeValidationSummary');
+            validationSummary.classList.remove('show');
+        }
+
+        async function load() {
+            const res = await fetch(API);
+            const routes = await res.json();
+            render(routes);
+        }
+
+        function render(routes) {
+            tbody.innerHTML = '';
+            for (const r of routes) {
+                const tr = document.createElement('tr');
+                tr.className = 'tr';
+                tr.innerHTML = `
+                    <td>${r.routeId}</td>
+                    <td><span class="badge">${r.district||''}</span></td>
+                    <td><span class="badge">${r.fromStand||''}</span></td>
+                    <td><span class="badge">${r.toStand||''}</span></td>
+                    <td class="actions">
+                        <button class="button secondary" data-action="edit" data-id="${r.routeId}">Edit</button>
+                        <button class="button" data-action="delete" data-id="${r.routeId}">Delete</button>
+                    </td>`;
+                tr.querySelector('button[data-action="edit"]').addEventListener('click', () => openEdit(r));
+                tr.querySelector('button[data-action="delete"]').addEventListener('click', () => openDelete(r));
+                tbody.appendChild(tr);
+            }
+        }
+
+        function openAdd() {
+            current = null;
+            document.getElementById('modalTitle').textContent = 'Add Route';
+            populateDistrictSelect();
+            document.getElementById('district').value = '';
+            document.getElementById('fromStand').value = '';
+            document.getElementById('toStand').value = '';
+            document.getElementById('fromStand').disabled = true;
+            document.getElementById('toStand').disabled = true;
+            clearRouteValidationErrors();
+            modal.style.display = 'flex';
+        }
+
+        function openEdit(r) {
+            current = r;
+            document.getElementById('modalTitle').textContent = 'Edit Route';
+            populateDistrictSelect();
+            document.getElementById('district').value = r.district||'';
+            populateStandsForDistrict(r.district);
+            document.getElementById('fromStand').value = r.fromStand||'';
+            document.getElementById('toStand').value = r.toStand||'';
+            clearRouteValidationErrors();
+            modal.style.display = 'flex';
+        }
+
+        async function save() {
+            // Validate form before submission
+            if (!validateRouteForm()) {
+                return;
+            }
+
+            const payload = {
+                district: document.getElementById('district').value,
+                fromStand: document.getElementById('fromStand').value,
+                toStand: document.getElementById('toStand').value
+            };
+
+            if (!current) {
+                const res = await fetch(API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) { const error = await res.text(); alert('Create failed: ' + error); return; }
+            } else {
+                const res = await fetch(`${API}/${current.routeId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) { const error = await res.text(); alert('Update failed: ' + error); return; }
+            }
+            modal.style.display = 'none';
+            load();
+        }
+
+        function filter() {
+            const q = document.getElementById('search').value.toLowerCase();
+            for (const tr of tbody.children) {
+                const text = tr.innerText.toLowerCase();
+                tr.style.display = text.includes(q) ? '' : 'none';
+            }
+        }
+
+        // Simple typing functionality for select dropdowns
+        function initializeSearchableDropdowns() {
+            // Add typing functionality to district select
+            const districtSelect = document.getElementById('district');
+            let districtSearchTimeout;
+            
+            districtSelect.addEventListener('keydown', function(e) {
+                // Allow typing to filter options
+                if (e.key.length === 1 || e.key === 'Backspace') {
+                    clearTimeout(districtSearchTimeout);
+                    districtSearchTimeout = setTimeout(() => {
+                        filterSelectOptions(this, e.target.value);
+                    }, 100);
+                }
+            });
+            
+            // Add typing functionality to from stand select
+            const fromStandSelect = document.getElementById('fromStand');
+            let fromStandSearchTimeout;
+            
+            fromStandSelect.addEventListener('keydown', function(e) {
+                if (e.key.length === 1 || e.key === 'Backspace') {
+                    clearTimeout(fromStandSearchTimeout);
+                    fromStandSearchTimeout = setTimeout(() => {
+                        filterSelectOptions(this, e.target.value);
+                    }, 100);
+                }
+            });
+            
+            // Add typing functionality to to stand select
+            const toStandSelect = document.getElementById('toStand');
+            let toStandSearchTimeout;
+            
+            toStandSelect.addEventListener('keydown', function(e) {
+                if (e.key.length === 1 || e.key === 'Backspace') {
+                    clearTimeout(toStandSearchTimeout);
+                    toStandSearchTimeout = setTimeout(() => {
+                        filterSelectOptions(this, e.target.value);
+                    }, 100);
+                }
+            });
+        }
+        
+        function filterSelectOptions(selectElement, searchTerm) {
+            const options = Array.from(selectElement.options);
+            const searchLower = searchTerm.toLowerCase();
+            
+            options.forEach(option => {
+                if (option.value === '') {
+                    option.style.display = 'block'; // Always show the first empty option
+                } else if (option.text.toLowerCase().includes(searchLower)) {
+                    option.style.display = 'block';
+                } else {
+                    option.style.display = 'none';
+                }
+            });
+        }
+
+        function populateDistrictSelect() {
+            const el = document.getElementById('district');
+            el.innerHTML = '<option value="">Select District</option>' + DISTRICTS.map(d => `<option value="${d}">${d}</option>`).join('');
+            
+            // Add event listener for district change
+            el.addEventListener('change', function() {
+                const selectedDistrict = this.value;
+                if (selectedDistrict) {
+                    populateStandsForDistrict(selectedDistrict);
+                    document.getElementById('fromStand').disabled = false;
+                    document.getElementById('toStand').disabled = false;
+                } else {
+                    document.getElementById('fromStand').innerHTML = '<option value="">Select From Location</option>';
+                    document.getElementById('toStand').innerHTML = '<option value="">Select To Location</option>';
+                    document.getElementById('fromStand').disabled = true;
+                    document.getElementById('toStand').disabled = true;
+                }
+            });
+        }
+
+        function populateStandsForDistrict(district) {
+            const stands = DISTRICT_STANDS[district] || [];
+            const fromStandEl = document.getElementById('fromStand');
+            const toStandEl = document.getElementById('toStand');
+            
+            fromStandEl.innerHTML = '<option value="">Select From Location</option>' + 
+                stands.map(stand => `<option value="${stand}">${stand}</option>`).join('');
+            toStandEl.innerHTML = '<option value="">Select To Location</option>' + 
+                stands.map(stand => `<option value="${stand}">${stand}</option>`).join('');
+        }
+
+        function openDelete(r){
+            deleteTarget = r;
+            document.getElementById('deleteDetails').innerHTML = `
+                <div><strong>Route ID:</strong> ${r.routeId}</div>
+                <div><strong>District:</strong> ${r.district||''}</div>
+                <div><strong>From:</strong> ${r.fromStand||''}</div>
+                <div><strong>To:</strong> ${r.toStand||''}</div>
+            `;
+            document.getElementById('deleteMessage').style.display = 'none';
+            document.getElementById('deleteActions').style.display = 'flex';
+            document.getElementById('confirmActions').style.display = 'none';
+            deleteModal.style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
+
+

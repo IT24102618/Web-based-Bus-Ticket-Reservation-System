@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Bus Reservation</title>
+	<style>
+		:root { --bg:#0f172a; --muted:#94a3b8; --text:#e5e7eb; --primary:#22c55e; --primary-600:#16a34a; --card:#111827; }
+		html,body{height:100%}
+		body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica Neue,Arial;color:var(--text);background:linear-gradient(0deg,#0b1220,var(--bg));}
+		.nav{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(17,24,39,.8);backdrop-filter:blur(8px);border-bottom:1px solid rgba(148,163,184,.15);position:sticky;top:0;z-index:10}
+		.nav-left,.nav-right{display:flex;gap:12px;align-items:center}
+		.nav a, .nav button{color:var(--text);text-decoration:none;font-weight:600;background:transparent;border:0;cursor:pointer;padding:8px 10px;border-radius:8px}
+		.nav a:hover, .nav button:hover{background:rgba(148,163,184,.12)}
+		.profile-icon{font-size:24px;padding:8px;border-radius:50%;background:rgba(148,163,184,.1);transition:all 0.2s}
+		.profile-icon:hover{background:rgba(34,197,94,.2);transform:scale(1.1)}
+		.notification-bell{font-size:22px;padding:8px;border-radius:50%;background:rgba(148,163,184,.1);transition:all 0.2s;position:relative;cursor:pointer}
+		.notification-bell:hover{background:rgba(34,197,94,.2);transform:scale(1.1)}
+		.notification-badge{position:absolute;top:4px;right:4px;background:#ef4444;color:#fff;font-size:11px;font-weight:700;border-radius:10px;padding:2px 6px;min-width:18px;text-align:center}
+		.notification-dropdown{position:absolute;top:60px;right:16px;width:400px;max-width:90vw;background:var(--card);border:1px solid rgba(148,163,184,.2);border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.3);z-index:1000;max-height:500px;overflow:hidden;display:flex;flex-direction:column}
+		.notification-header{padding:16px;border-bottom:1px solid rgba(148,163,184,.15);display:flex;justify-content:space-between;align-items:center}
+		.notification-header h3{margin:0;font-size:16px}
+		.notification-list{overflow-y:auto;max-height:400px}
+		.notification-item{padding:14px 16px;border-bottom:1px solid rgba(148,163,184,.1);cursor:pointer;transition:background 0.2s}
+		.notification-item:hover{background:rgba(148,163,184,.05)}
+		.notification-item.unread{background:rgba(34,197,94,.05)}
+		.notification-item.unread:before{content:'';position:absolute;left:16px;width:8px;height:8px;background:var(--primary);border-radius:50%;margin-top:6px}
+		.notification-message{font-size:14px;line-height:1.5;margin:0 0 6px;padding-left:16px}
+		.notification-time{font-size:12px;color:var(--muted);padding-left:16px}
+		.notification-empty{padding:40px 20px;text-align:center;color:var(--muted)}
+		.mark-all-read{color:var(--primary);cursor:pointer;font-size:13px}
+		.mark-all-read:hover{text-decoration:underline}
+		.brand{font-weight:800;letter-spacing:.2px}
+		.header{position:relative;overflow:hidden}
+		.banner{width:100%;height:320px;background:url('https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?q=80&w=2000&auto=format&fit=crop') center/cover no-repeat;filter:brightness(.7)}
+		.hero{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:16px}
+		.hero h1{font-size:32px;margin:0}
+		.hero p{color:var(--muted);margin:8px 0 0}
+		.container{max-width:1100px;margin:24px auto;padding:0 16px}
+		.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+		.card{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01));border:1px solid rgba(148,163,184,.15);border-radius:14px;padding:16px}
+		.card h3{margin:0 0 8px;font-size:18px}
+		.card p{margin:0 0 12px;color:var(--muted)}
+		.button{appearance:none;border:0;padding:10px 14px;border-radius:10px;background:linear-gradient(180deg,var(--primary),var(--primary-600));color:#fff;font-weight:600;text-decoration:none;display:inline-block}
+		.link{color:var(--primary);text-decoration:none}
+		.link:hover{text-decoration:underline}
+		.hidden{display:none}
+		.feedback-section{margin:32px 0;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01));border:1px solid rgba(148,163,184,.15);border-radius:14px;padding:24px}
+		.feedback-section h2{margin:0 0 20px;font-size:24px;text-align:center}
+		.feedback-carousel{position:relative;overflow:hidden}
+		.feedback-slider{display:flex;transition:transform 0.3s ease}
+		.feedback-item{min-width:100%;box-sizing:border-box;padding:20px;text-align:center}
+		.feedback-item .message{font-size:18px;font-style:italic;color:var(--text);margin-bottom:16px;line-height:1.6}
+		.feedback-item .author{color:var(--muted);font-size:14px;font-weight:500}
+		.arrow{position:absolute;top:50%;transform:translateY(-50%);background:rgba(34,197,94,.3);border:0;color:#fff;font-size:24px;width:40px;height:40px;border-radius:50%;cursor:pointer;transition:all 0.2s;z-index:1}
+		.arrow:hover{background:var(--primary);transform:translateY(-50%) scale(1.1)}
+		.arrow.left{left:10px}
+		.arrow.right{right:10px}
+		.feedback-dots{text-align:center;margin-top:16px}
+		.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:rgba(148,163,184,.3);margin:0 4px;cursor:pointer;transition:all 0.2s}
+		.dot.active{background:var(--primary);width:24px;border-radius:5px}
+		.no-feedbacks{text-align:center;color:var(--muted);padding:40px 20px}
+	</style>
+</head>
+<body>
+	<nav class="nav">
+		<div class="nav-left">
+			<span class="brand">Bus Ticket Reservation System</span>
+		</div>
+		<div class="nav-right">
+			<a href="login.html" id="navLogin">Login</a>
+			<a href="register.html" id="navSignup">Sign up</a>
+			<button id="notificationBell" class="hidden notification-bell" title="Notifications">
+				🔔
+				<span id="notificationBadge" class="notification-badge hidden">0</span>
+			</button>
+			<a href="profile.html" id="navProfile" class="hidden profile-icon" title="My Profile">👤</a>
+			<button id="navSignout" class="hidden">Sign out</button>
+		</div>
+	</nav>
+	
+	<!-- Notification Dropdown -->
+	<div id="notificationDropdown" class="notification-dropdown hidden">
+		<div class="notification-header">
+			<h3>Notifications</h3>
+			<span class="mark-all-read" id="markAllRead">Mark all as read</span>
+		</div>
+		<div class="notification-list" id="notificationList">
+			<div class="notification-empty">No notifications</div>
+		</div>
+	</div>
+	
+	<header class="header">
+		<div class="banner"></div>
+		<div class="hero">
+			<div>
+				<h1>Book your next ride</h1>
+				<p>Fast reservations, secure payments, and reliable schedules.</p>
+			</div>
+		</div>
+	</header>
+	<main class="container">
+		<div class="cards">
+			<div class="card">
+				<h3>Booking Reservation</h3>
+				<p>Find routes and reserve your seats in minutes.</p>
+				<a class="button" href="booking.html">Start Booking</a>
+			</div>
+			<div class="card">
+				<h3>Feedback & Support</h3>
+				<p>Share your feedback or report any issues with our service.</p>
+				<a class="button" href="feedback.html">Give Feedback</a>
+			</div>
+		</div>
+
+		<!-- Customer Feedbacks Section -->
+		<div class="feedback-section">
+			<h2>What Our Passengers Say</h2>
+			<div class="feedback-carousel" id="feedbackCarousel">
+				<button class="arrow left" id="prevBtn" style="display:none;">❮</button>
+				<div class="feedback-slider" id="feedbackSlider">
+					<!-- Feedbacks will be loaded here dynamically -->
+				</div>
+				<button class="arrow right" id="nextBtn" style="display:none;">❯</button>
+			</div>
+			<div class="feedback-dots" id="feedbackDots"></div>
+		</div>
+	</main>
+	<script>
+		function syncAuthUI() {
+			const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
+			const loggedIn = !!user;
+			const isPassenger = loggedIn && user.role && user.role.toLowerCase() === 'passenger';
+			document.getElementById('navLogin').classList.toggle('hidden', loggedIn);
+			document.getElementById('navSignup').classList.toggle('hidden', loggedIn);
+			document.getElementById('navProfile').classList.toggle('hidden', !loggedIn);
+			document.getElementById('navSignout').classList.toggle('hidden', !loggedIn);
+			document.getElementById('notificationBell').classList.toggle('hidden', !isPassenger);
+		}
+		syncAuthUI();
+		document.getElementById('navSignout').addEventListener('click', () => { localStorage.removeItem('currentUser'); syncAuthUI(); });
+		
+		// Notification System
+		let notificationDropdownVisible = false;
+		
+		// Calculate time ago
+		function getTimeAgo(dateString) {
+			const now = new Date();
+			const past = new Date(dateString);
+			const seconds = Math.floor((now - past) / 1000);
+			
+			if (seconds < 60) return 'Just now';
+			const minutes = Math.floor(seconds / 60);
+			if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+			const hours = Math.floor(minutes / 60);
+			if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+			const days = Math.floor(hours / 24);
+			if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`;
+			const weeks = Math.floor(days / 7);
+			if (weeks < 4) return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+			const months = Math.floor(days / 30);
+			if (months < 12) return `${months} month${months > 1 ? 's' : ''} ago`;
+			const years = Math.floor(days / 365);
+			return `${years} year${years > 1 ? 's' : ''} ago`;
+		}
+		
+		// Fetch and display notifications
+		function loadNotifications() {
+			const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
+			if (!user || !user.nic) return;
+			
+			fetch(`/api/notifications/user/${user.nic}`)
+				.then(res => res.json())
+				.then(notifications => {
+					displayNotifications(notifications);
+					updateNotificationBadge();
+				})
+				.catch(err => console.error('Error loading notifications:', err));
+		}
+		
+		// Display notifications in dropdown
+		function displayNotifications(notifications) {
+			const list = document.getElementById('notificationList');
+			
+			if (notifications.length === 0) {
+				list.innerHTML = '<div class="notification-empty">No notifications</div>';
+				return;
+			}
+			
+			list.innerHTML = notifications.map(notif => `
+				<div class="notification-item ${!notif.isRead ? 'unread' : ''}" data-id="${notif.id}" onclick="markNotificationAsRead(${notif.id})">
+					<div class="notification-message">${notif.message}</div>
+					<div class="notification-time">${getTimeAgo(notif.createdAt)}</div>
+				</div>
+			`).join('');
+		}
+		
+		// Update notification badge
+		function updateNotificationBadge() {
+			const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
+			if (!user || !user.nic) return;
+			
+			fetch(`/api/notifications/user/${user.nic}/count`)
+				.then(res => res.json())
+				.then(data => {
+					const badge = document.getElementById('notificationBadge');
+					if (data.unreadCount > 0) {
+						badge.textContent = data.unreadCount > 99 ? '99+' : data.unreadCount;
+						badge.classList.remove('hidden');
+					} else {
+						badge.classList.add('hidden');
+					}
+				})
+				.catch(err => console.error('Error updating badge:', err));
+		}
+		
+		// Mark notification as read
+		function markNotificationAsRead(notificationId) {
+			fetch(`/api/notifications/${notificationId}/read`, {
+				method: 'PUT'
+			})
+			.then(() => {
+				loadNotifications();
+			})
+			.catch(err => console.error('Error marking as read:', err));
+		}
+		
+		// Mark all notifications as read
+		document.getElementById('markAllRead').addEventListener('click', () => {
+			const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
+			if (!user || !user.nic) return;
+			
+			fetch(`/api/notifications/user/${user.nic}/read-all`, {
+				method: 'PUT'
+			})
+			.then(() => {
+				loadNotifications();
+			})
+			.catch(err => console.error('Error marking all as read:', err));
+		});
+		
+		// Toggle notification dropdown
+		document.getElementById('notificationBell').addEventListener('click', () => {
+			notificationDropdownVisible = !notificationDropdownVisible;
+			const dropdown = document.getElementById('notificationDropdown');
+			dropdown.classList.toggle('hidden', !notificationDropdownVisible);
+			
+			if (notificationDropdownVisible) {
+				loadNotifications();
+			}
+		});
+		
+		// Close dropdown when clicking outside
+		document.addEventListener('click', (e) => {
+			const dropdown = document.getElementById('notificationDropdown');
+			const bell = document.getElementById('notificationBell');
+			if (!dropdown.contains(e.target) && !bell.contains(e.target)) {
+				notificationDropdownVisible = false;
+				dropdown.classList.add('hidden');
+			}
+		});
+		
+		// Load notifications and update badge on page load for passengers
+		const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
+		if (user && user.role && user.role.toLowerCase() === 'passenger') {
+			updateNotificationBadge();
+			setInterval(updateNotificationBadge, 30000); // Update every 30 seconds
+		}
+
+		// Feedback Carousel Functionality
+		let currentFeedbackIndex = 0;
+		let feedbacks = [];
+
+		function loadFeedbacks() {
+			fetch('/api/feedback')
+				.then(res => res.json())
+				.then(data => {
+					// Filter to show only 'feedback' type (not 'complain')
+					feedbacks = data.filter(f => f.type === 'feedback');
+					if (feedbacks.length === 0) {
+						document.getElementById('feedbackSlider').innerHTML = '<div class="no-feedbacks">No feedbacks available yet. Be the first to share your experience!</div>';
+						return;
+					}
+					renderFeedbacks();
+					updateCarousel();
+				})
+				.catch(err => {
+					console.error('Error loading feedbacks:', err);
+					document.getElementById('feedbackSlider').innerHTML = '<div class="no-feedbacks">Unable to load feedbacks at this time.</div>';
+				});
+		}
+
+		function renderFeedbacks() {
+			const slider = document.getElementById('feedbackSlider');
+			const dotsContainer = document.getElementById('feedbackDots');
+			
+			slider.innerHTML = feedbacks.map((fb, index) => `
+				<div class="feedback-item">
+					<div class="message">"${fb.description}"</div>
+					<div class="author">- ${fb.name}</div>
+				</div>
+			`).join('');
+
+			dotsContainer.innerHTML = feedbacks.map((_, index) => 
+				`<span class="dot ${index === 0 ? 'active' : ''}" onclick="goToFeedback(${index})"></span>`
+			).join('');
+
+			// Show arrows only if there are multiple feedbacks
+			if (feedbacks.length > 1) {
+				document.getElementById('prevBtn').style.display = 'block';
+				document.getElementById('nextBtn').style.display = 'block';
+			}
+		}
+
+		function updateCarousel() {
+			const slider = document.getElementById('feedbackSlider');
+			slider.style.transform = `translateX(-${currentFeedbackIndex * 100}%)`;
+			
+			// Update dots
+			document.querySelectorAll('.dot').forEach((dot, index) => {
+				dot.classList.toggle('active', index === currentFeedbackIndex);
+			});
+		}
+
+		function nextFeedback() {
+			currentFeedbackIndex = (currentFeedbackIndex + 1) % feedbacks.length;
+			updateCarousel();
+		}
+
+		function prevFeedback() {
+			currentFeedbackIndex = (currentFeedbackIndex - 1 + feedbacks.length) % feedbacks.length;
+			updateCarousel();
+		}
+
+		function goToFeedback(index) {
+			currentFeedbackIndex = index;
+			updateCarousel();
+		}
+
+		// Event listeners for arrows
+		document.getElementById('nextBtn').addEventListener('click', nextFeedback);
+		document.getElementById('prevBtn').addEventListener('click', prevFeedback);
+
+		// Auto-advance carousel every 5 seconds
+		setInterval(() => {
+			if (feedbacks.length > 1) {
+				nextFeedback();
+			}
+		}, 5000);
+
+		// Load feedbacks on page load
+		loadFeedbacks();
+	</script>
+</body>
+</html>

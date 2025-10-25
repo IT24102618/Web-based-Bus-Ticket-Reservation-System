@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Login - Bus Reservation</title>
+	<style>
+		:root {
+			--bg: #0f172a;
+			--card: #111827;
+			--muted: #94a3b8;
+			--text: #e5e7eb;
+			--primary: #22c55e;
+			--primary-600: #16a34a;
+			--input: #1f2937;
+			--ring: rgba(34, 197, 94, 0.35);
+		}
+		* { box-sizing: border-box; }
+		html, body { height: 100%; }
+		body {
+			margin: 0;
+			font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+			color: var(--text);
+			background: radial-gradient(1200px 800px at 80% -20%, #0b1220 20%, var(--bg) 60%),
+				linear-gradient(0deg, #0b1220, var(--bg));
+			background-attachment: fixed;
+			display: grid;
+			place-items: center;
+			padding: 24px;
+		}
+		.card {
+			width: 100%;
+			max-width: 420px;
+			background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+			backdrop-filter: blur(10px);
+			border: 1px solid rgba(148,163,184,0.15);
+			border-radius: 14px;
+			box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+			padding: 28px;
+		}
+		.header {
+			display: flex;
+			flex-direction: column;
+			gap: 6px;
+			margin-bottom: 18px;
+		}
+		.header h1 {
+			font-size: 22px;
+			margin: 0;
+		}
+		.header p { color: var(--muted); margin: 0; }
+		.form { display: grid; gap: 14px; }
+		.label { font-size: 13px; color: var(--muted); margin-bottom: 6px; display: block; }
+		.input {
+			width: 100%;
+			padding: 12px 14px;
+			border-radius: 10px;
+			border: 1px solid rgba(148,163,184,0.25);
+			background: var(--input);
+			color: var(--text);
+			outline: none;
+			transition: box-shadow .2s, border-color .2s;
+		}
+		.input:focus { box-shadow: 0 0 0 4px var(--ring); border-color: var(--primary); }
+		.actions { display: grid; gap: 10px; margin-top: 6px; }
+		.button {
+			appearance: none;
+			border: 0;
+			padding: 12px 16px;
+			border-radius: 10px;
+			background: linear-gradient(180deg, var(--primary), var(--primary-600));
+			color: white;
+			font-weight: 600;
+			cursor: pointer;
+			transition: transform .02s ease-in-out, filter .2s;
+		}
+		.button:hover { filter: brightness(1.05); }
+		.button:active { transform: translateY(1px); }
+		.link-row { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+		.link { color: var(--primary); text-decoration: none; font-size: 13px; }
+		.link:hover { text-decoration: underline; }
+		.divider { height: 1px; background: rgba(148,163,184,0.15); margin: 14px 0; border: 0; }
+		.footer { text-align: center; color: var(--muted); font-size: 13px; margin-top: 8px; }
+		.small { font-size: 12px; color: var(--muted); }
+		.hidden { display: none; }
+		.error{color:#ef4444;font-size:12px;margin-top:4px;display:block}
+		.input.error{border-color:#ef4444;box-shadow:0 0 0 4px rgba(239,68,68,.2)}
+		.input.success{border-color:#10b981;box-shadow:0 0 0 4px rgba(16,185,129,.2)}
+		.validation-summary{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:12px;margin-bottom:16px;display:none}
+		.validation-summary.show{display:block}
+		.validation-summary ul{margin:0;padding-left:20px}
+		.validation-summary li{color:#ef4444;font-size:14px;margin-bottom:4px}
+	</style>
+</head>
+<body>
+	<div class="card">
+		<div class="header">
+			<h1>Welcome back</h1>
+			<p>Sign in to continue your journey</p>
+		</div>
+		<form class="form" id="loginForm">
+			<div id="loginValidationSummary" class="validation-summary">
+				<strong>Please fix the following errors:</strong>
+				<ul id="loginValidationErrors"></ul>
+			</div>
+			<label class="label" for="loginEmail">Email</label>
+			<input class="input" type="email" id="loginEmail" placeholder="you@example.com" required />
+			<span id="loginEmailError" class="error"></span>
+
+			<label class="label" for="loginPassword">Password</label>
+			<input class="input" type="password" id="loginPassword" placeholder="••••••••" required />
+			<span id="loginPasswordError" class="error"></span>
+
+			<div class="actions">
+				<button type="submit" class="button">Sign in</button>
+				<div class="link-row">
+					<a href="#" id="toggleForgot" class="link">Forgot password?</a>
+					<a class="link" href="register.html">Create account</a>
+				</div>
+			</div>
+		</form>
+
+		<hr class="divider" />
+
+		<form class="form hidden" id="forgotForm">
+			<div id="forgotValidationSummary" class="validation-summary">
+				<strong>Please fix the following errors:</strong>
+				<ul id="forgotValidationErrors"></ul>
+			</div>
+			<p class="small">Reset your password</p>
+			<label class="label" for="forgotEmail">Email</label>
+			<input class="input" type="email" id="forgotEmail" placeholder="you@example.com" />
+			<span id="forgotEmailError" class="error"></span>
+
+			<label class="label" for="newPassword">New password</label>
+			<input class="input" type="password" id="newPassword" placeholder="New password" />
+			<span id="newPasswordError" class="error"></span>
+
+			<div class="actions">
+				<button type="button" id="forgotBtn" class="button">Reset password</button>
+				<div class="footer small">We will update your password if the email exists.</div>
+			</div>
+		</form>
+		<div class="footer small">By continuing you agree to our terms and privacy policy.</div>
+	</div>
+
+	<script>
+		const API = 'http://localhost:8080/api/users';
+
+		// Initialize validation on page load
+		document.addEventListener('DOMContentLoaded', () => {
+			setupLoginValidation();
+			setupForgotValidation();
+		});
+
+		document.getElementById('loginForm').addEventListener('submit', async (e) => {
+			e.preventDefault();
+			await login();
+		});
+
+		document.getElementById('toggleForgot').addEventListener('click', (e) => {
+			e.preventDefault();
+			document.getElementById('forgotForm').classList.toggle('hidden');
+			clearLoginValidationErrors();
+		});
+
+		document.getElementById('forgotBtn').addEventListener('click', async () => {
+			await forgot();
+		});
+
+		// Validation functions
+		function validateEmail(email) {
+			const trimmed = email.trim();
+			if (!trimmed) {
+				return 'Email is required';
+			}
+			const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+			if (!emailRegex.test(trimmed)) {
+				return 'Please enter a valid email address';
+			}
+			if (trimmed.length > 100) {
+				return 'Email must be less than 100 characters';
+			}
+			return null;
+		}
+
+		function validatePassword(password) {
+			if (!password) {
+				return 'Password is required';
+			}
+			if (password.length < 6) {
+				return 'Password must be at least 6 characters long';
+			}
+			return null;
+		}
+
+		function validateNewPassword(password) {
+			if (!password) {
+				return 'New password is required';
+			}
+			if (password.length < 8) {
+				return 'Password must be at least 8 characters long';
+			}
+			if (password.length > 100) {
+				return 'Password must be less than 100 characters';
+			}
+			// Check for at least one uppercase, one lowercase, and one number
+			const hasUpperCase = /[A-Z]/.test(password);
+			const hasLowerCase = /[a-z]/.test(password);
+			const hasNumbers = /\d/.test(password);
+			
+			if (!hasUpperCase || !hasLowerCase || !hasNumbers) {
+				return 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
+			}
+			return null;
+		}
+
+		function setupLoginValidation() {
+			const inputs = [
+				{ id: 'loginEmail', validator: validateEmail, errorId: 'loginEmailError' },
+				{ id: 'loginPassword', validator: validatePassword, errorId: 'loginPasswordError' }
+			];
+
+			inputs.forEach(({ id, validator, errorId }) => {
+				const input = document.getElementById(id);
+				const errorElement = document.getElementById(errorId);
+
+				// Real-time validation on input
+				input.addEventListener('input', () => {
+					validateField(input, validator, errorElement);
+				});
+
+				// Validation on blur
+				input.addEventListener('blur', () => {
+					validateField(input, validator, errorElement);
+				});
+			});
+		}
+
+		function setupForgotValidation() {
+			const inputs = [
+				{ id: 'forgotEmail', validator: validateEmail, errorId: 'forgotEmailError' },
+				{ id: 'newPassword', validator: validateNewPassword, errorId: 'newPasswordError' }
+			];
+
+			inputs.forEach(({ id, validator, errorId }) => {
+				const input = document.getElementById(id);
+				const errorElement = document.getElementById(errorId);
+
+				// Real-time validation on input
+				input.addEventListener('input', () => {
+					validateField(input, validator, errorElement);
+				});
+
+				// Validation on blur
+				input.addEventListener('blur', () => {
+					validateField(input, validator, errorElement);
+				});
+			});
+		}
+
+		function validateField(input, validator, errorElement) {
+			const error = validator(input.value);
+			if (error) {
+				input.classList.add('error');
+				input.classList.remove('success');
+				errorElement.textContent = error;
+			} else {
+				input.classList.remove('error');
+				input.classList.add('success');
+				errorElement.textContent = '';
+			}
+		}
+
+		function validateLoginForm() {
+			const inputs = [
+				{ id: 'loginEmail', validator: validateEmail, errorId: 'loginEmailError' },
+				{ id: 'loginPassword', validator: validatePassword, errorId: 'loginPasswordError' }
+			];
+
+			const errors = [];
+			let isValid = true;
+
+			inputs.forEach(({ id, validator, errorId }) => {
+				const input = document.getElementById(id);
+				const errorElement = document.getElementById(errorId);
+				const error = validator(input.value);
+				
+				if (error) {
+					input.classList.add('error');
+					input.classList.remove('success');
+					errorElement.textContent = error;
+					errors.push(error);
+					isValid = false;
+				} else {
+					input.classList.remove('error');
+					input.classList.add('success');
+					errorElement.textContent = '';
+				}
+			});
+
+			// Show validation summary if there are errors
+			const validationSummary = document.getElementById('loginValidationSummary');
+			const validationErrors = document.getElementById('loginValidationErrors');
+			
+			if (!isValid) {
+				validationErrors.innerHTML = errors.map(error => `<li>${error}</li>`).join('');
+				validationSummary.classList.add('show');
+			} else {
+				validationSummary.classList.remove('show');
+			}
+
+			return isValid;
+		}
+
+		function validateForgotForm() {
+			const inputs = [
+				{ id: 'forgotEmail', validator: validateEmail, errorId: 'forgotEmailError' },
+				{ id: 'newPassword', validator: validateNewPassword, errorId: 'newPasswordError' }
+			];
+
+			const errors = [];
+			let isValid = true;
+
+			inputs.forEach(({ id, validator, errorId }) => {
+				const input = document.getElementById(id);
+				const errorElement = document.getElementById(errorId);
+				const error = validator(input.value);
+				
+				if (error) {
+					input.classList.add('error');
+					input.classList.remove('success');
+					errorElement.textContent = error;
+					errors.push(error);
+					isValid = false;
+				} else {
+					input.classList.remove('error');
+					input.classList.add('success');
+					errorElement.textContent = '';
+				}
+			});
+
+			// Show validation summary if there are errors
+			const validationSummary = document.getElementById('forgotValidationSummary');
+			const validationErrors = document.getElementById('forgotValidationErrors');
+			
+			if (!isValid) {
+				validationErrors.innerHTML = errors.map(error => `<li>${error}</li>`).join('');
+				validationSummary.classList.add('show');
+			} else {
+				validationSummary.classList.remove('show');
+			}
+
+			return isValid;
+		}
+
+		function clearLoginValidationErrors() {
+			const inputs = ['loginEmail', 'loginPassword'];
+			const errorIds = ['loginEmailError', 'loginPasswordError'];
+
+			inputs.forEach((inputId, index) => {
+				const input = document.getElementById(inputId);
+				const errorElement = document.getElementById(errorIds[index]);
+				
+				input.classList.remove('error', 'success');
+				errorElement.textContent = '';
+			});
+
+			// Hide validation summary
+			const validationSummary = document.getElementById('loginValidationSummary');
+			validationSummary.classList.remove('show');
+		}
+
+		function clearForgotValidationErrors() {
+			const inputs = ['forgotEmail', 'newPassword'];
+			const errorIds = ['forgotEmailError', 'newPasswordError'];
+
+			inputs.forEach((inputId, index) => {
+				const input = document.getElementById(inputId);
+				const errorElement = document.getElementById(errorIds[index]);
+				
+				input.classList.remove('error', 'success');
+				errorElement.textContent = '';
+			});
+
+			// Hide validation summary
+			const validationSummary = document.getElementById('forgotValidationSummary');
+			validationSummary.classList.remove('show');
+		}
+
+		async function login() {
+			// Validate form before submission
+			if (!validateLoginForm()) {
+				return;
+			}
+
+			const email = document.getElementById('loginEmail').value.trim();
+			const password = document.getElementById('loginPassword').value;
+			
+			const res = await fetch(`${API}/login`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ email, password })
+			});
+			if (res.ok) {
+				const data = await res.json();
+				console.log('Login successful, user data:', data); // Debug log
+				const role = (data.role || '').trim();
+				localStorage.setItem('currentUser', JSON.stringify(data));
+				console.log('User data stored in localStorage'); // Debug log
+				
+				// Check if there's a return URL stored
+				const returnUrl = localStorage.getItem('returnUrl');
+				console.log('Return URL:', returnUrl); // Debug log
+				if (returnUrl) {
+					// Clear the return URL and redirect back
+					localStorage.removeItem('returnUrl');
+					console.log('Redirecting to return URL:', returnUrl); // Debug log
+					window.location.href = returnUrl;
+					return;
+				}
+				
+				// Default redirects based on role
+				switch (role) {
+					case 'IT Support':
+						window.location.href = 'itdashboard.html';
+						break;
+					case 'Customer Service':
+						window.location.href = 'customerservicedashboard.html';
+						break;
+					case 'Operation User':
+						window.location.href = 'operationdashboard.html';
+						break;
+					case 'Finance User':
+						window.location.href = 'financedashboard.html';
+						break;
+					case 'Ticket Officer':
+						window.location.href = 'ticketingdashboard.html';
+						break;
+					case 'Passenger':
+					default:
+						window.location.href = 'index.html';
+				}
+			} else {
+				alert('Invalid email or password.');
+			}
+		}
+
+		async function forgot() {
+			// Validate form before submission
+			if (!validateForgotForm()) {
+				return;
+			}
+
+			const email = document.getElementById('forgotEmail').value.trim();
+			const newPassword = document.getElementById('newPassword').value;
+			
+			const res = await fetch(`${API}/forgot`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ email, newPassword })
+			});
+			if (res.ok) {
+				alert('Password reset successful!');
+				document.getElementById('forgotForm').classList.add('hidden');
+				clearForgotValidationErrors();
+			} else {
+				alert('Email not found');
+			}
+		}
+	</script>
+</body>
+</html>

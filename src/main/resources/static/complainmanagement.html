@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Complaint Management • Bus Reservation</title>
+    <style>
+        :root { 
+            --bg:#0f172a; 
+            --muted:#94a3b8; 
+            --text:#e5e7eb; 
+            --primary:#22c55e; 
+            --primary-600:#16a34a; 
+            --input:#1f2937; 
+            --ring:rgba(34,197,94,.35); 
+            --card:#111827;
+            --danger:#ef4444;
+            --danger-600:#dc2626;
+            --warning:#f59e0b;
+            --warning-600:#d97706;
+            --info:#3b82f6;
+            --info-600:#2563eb;
+        }
+        html,body{height:100%}
+        body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica Neue,Arial;color:var(--text);background:linear-gradient(0deg,#0b1220,var(--bg));}
+        .layout{display:flex;min-height:100vh}
+        .sidebar{width:240px;background:#0c1324;border-right:1px solid rgba(148,163,184,.15);padding:16px;position:sticky;top:0;height:100vh}
+        .brand{font-weight:800;margin:0 0 14px}
+        .menu{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+        .menu a{display:block;color:#e5e7eb;text-decoration:none;padding:10px 12px;border-radius:10px}
+        .menu a:hover{background:rgba(148,163,184,.12)}
+        .menu a.active{background:rgba(34,197,94,.15);color:var(--primary)}
+        .content{flex:1;padding:24px}
+        .topbar{position:sticky;top:0;z-index:5;background:rgba(12,19,36,.85);backdrop-filter:blur(8px);border-bottom:1px solid rgba(148,163,184,.15);display:flex;justify-content:flex-end;align-items:center;padding:10px 16px;margin:-24px -24px 24px -24px}
+        .button{appearance:none;border:0;padding:10px 12px;border-radius:10px;background:linear-gradient(180deg,var(--primary),var(--primary-600));color:#fff;font-weight:600;cursor:pointer}
+        .button.danger{background:linear-gradient(180deg,var(--danger),var(--danger-600))}
+        .button.warning{background:linear-gradient(180deg,var(--warning),var(--warning-600))}
+        .button.info{background:linear-gradient(180deg,var(--info),var(--info-600))}
+        .button.small{padding:6px 10px;font-size:12px}
+        .h1{font-size:22px;margin:0 0 24px}
+        .card{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01));border:1px solid rgba(148,163,184,.15);border-radius:14px;padding:20px;margin-bottom:16px}
+        .table{width:100%;border-collapse:collapse;margin-top:16px}
+        .table th,.table td{padding:12px;text-align:left;border-bottom:1px solid rgba(148,163,184,.15)}
+        .table th{background:rgba(148,163,184,.05);font-weight:600;color:var(--muted)}
+        .table tr:hover{background:rgba(148,163,184,.05)}
+        .input{padding:8px 10px;border-radius:6px;border:1px solid rgba(148,163,184,.25);background:var(--input);color:var(--text);outline:none}
+        .input:focus{box-shadow:0 0 0 2px var(--ring);border-color:var(--primary)}
+        .textarea{width:100%;padding:12px;border-radius:8px;border:1px solid rgba(148,163,184,.25);background:var(--input);color:var(--text);outline:none;resize:vertical;min-height:100px;font-family:inherit}
+        .textarea:focus{box-shadow:0 0 0 2px var(--ring);border-color:var(--primary)}
+        .actions{display:flex;gap:8px;align-items:center}
+        .loading{text-align:center;padding:40px;color:var(--muted)}
+        .error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#fca5a5;padding:12px;border-radius:8px;margin-bottom:16px}
+        .success{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:#86efac;padding:12px;border-radius:8px;margin-bottom:16px}
+        .modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:1000}
+        .modal-content{background:var(--card);border-radius:12px;padding:24px;max-width:600px;width:90%;border:1px solid rgba(148,163,184,.15)}
+        .modal h3{margin:0 0 16px}
+        .modal-actions{display:flex;gap:12px;justify-content:flex-end;margin-top:20px}
+        .hidden{display:none}
+        .filter-bar{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+        .filter-select{padding:8px 12px;border-radius:6px;border:1px solid rgba(148,163,184,.25);background:var(--input);color:var(--text);outline:none}
+        .status-badge{padding:4px 8px;border-radius:6px;font-size:12px;font-weight:500}
+        .status-pending{background:rgba(245,158,11,.2);color:#f59e0b}
+        .status-replied{background:rgba(34,197,94,.2);color:#22c55e}
+        .complaint-details{background:rgba(255,255,255,.02);border:1px solid rgba(148,163,184,.1);border-radius:8px;padding:12px;margin:8px 0}
+        .complaint-meta{display:flex;gap:16px;font-size:12px;color:var(--muted);margin-bottom:8px}
+        .complaint-description{line-height:1.5;margin-bottom:8px}
+        .reply-section{background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.2);border-radius:8px;padding:12px;margin-top:8px}
+        .reply-label{font-size:12px;color:var(--primary);font-weight:600;margin-bottom:4px}
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <button id="signout" class="button">Sign out</button>
+    </div>
+    <div class="layout">
+        <aside class="sidebar">
+            <h2 class="brand">Customer Service</h2>
+            <ul class="menu">
+                <li><a href="complainmanagement.html" class="active">Complaint Management</a></li>
+                <li><a href="passengersbooking.html">Passenger Bookings</a></li>
+            </ul>
+        </aside>
+        <main class="content">
+            <h1 class="h1">Complaint Management</h1>
+            
+            <div id="messageContainer"></div>
+            
+            <div class="card">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                    <h3 style="margin:0">Customer Complaints</h3>
+                    <button id="refreshBtn" class="button small">Refresh</button>
+                </div>
+                
+                <div class="filter-bar">
+                    <select id="typeFilter" class="filter-select">
+                        <option value="">All Types</option>
+                        <option value="complain">Complaints</option>
+                        <option value="feedback">Feedback</option>
+                    </select>
+                    <select id="statusFilter" class="filter-select">
+                        <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="replied">Replied</option>
+                    </select>
+                    <button id="clearFilters" class="button small warning">Clear Filters</button>
+                </div>
+                
+                <div id="loadingIndicator" class="loading">Loading complaints...</div>
+                
+                <div id="complaintsContainer" class="hidden">
+                    <!-- Complaints will be loaded here -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Reply Modal -->
+    <div id="replyModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Reply to Complaint</h3>
+            <div id="complaintDetails" style="margin-bottom:16px">
+                <!-- Complaint details will be shown here -->
+            </div>
+            <div style="margin-bottom:16px">
+                <label style="display:block;margin-bottom:8px;color:var(--muted)">Your Reply</label>
+                <textarea id="replyText" class="textarea" placeholder="Enter your reply to the customer..."></textarea>
+            </div>
+            <div class="modal-actions">
+                <button id="cancelReply" class="button warning">Cancel</button>
+                <button id="sendReply" class="button">Send Reply</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Reply Modal -->
+    <div id="editReplyModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Edit Reply</h3>
+            <div id="editComplaintDetails" style="margin-bottom:16px">
+                <!-- Complaint details will be shown here -->
+            </div>
+            <div style="margin-bottom:16px">
+                <label style="display:block;margin-bottom:8px;color:var(--muted)">Your Reply</label>
+                <textarea id="editReplyText" class="textarea" placeholder="Edit your reply to the customer..."></textarea>
+            </div>
+            <div class="modal-actions">
+                <button id="cancelEditReply" class="button warning">Cancel</button>
+                <button id="updateReply" class="button">Update Reply</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Confirm Delete</h3>
+            <div id="deleteComplaintDetails" style="margin-bottom:16px">
+                <!-- Complaint details will be shown here -->
+            </div>
+            <div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#fca5a5;padding:12px;border-radius:8px;margin-bottom:16px">
+                <strong>Warning:</strong> This action cannot be undone. The complaint/feedback will be permanently deleted.
+            </div>
+            <div class="modal-actions">
+                <button id="cancelDelete" class="button warning">Cancel</button>
+                <button id="confirmDelete" class="button danger">Delete Permanently</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let complaints = [];
+        let currentComplaintId = null;
+
+        // Load complaints on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadComplaints();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            document.getElementById('signout').addEventListener('click', () => {
+                localStorage.removeItem('currentUser');
+                window.location.href = 'login.html';
+            });
+
+            document.getElementById('refreshBtn').addEventListener('click', loadComplaints);
+            
+            // Filter controls
+            document.getElementById('typeFilter').addEventListener('change', filterComplaints);
+            document.getElementById('statusFilter').addEventListener('change', filterComplaints);
+            document.getElementById('clearFilters').addEventListener('click', clearFilters);
+            
+            // Reply modal
+            document.getElementById('cancelReply').addEventListener('click', () => {
+                document.getElementById('replyModal').classList.add('hidden');
+            });
+            
+            document.getElementById('sendReply').addEventListener('click', sendReply);
+            
+            // Edit reply modal
+            document.getElementById('cancelEditReply').addEventListener('click', () => {
+                document.getElementById('editReplyModal').classList.add('hidden');
+            });
+            
+            document.getElementById('updateReply').addEventListener('click', updateReply);
+            
+            // Delete modal
+            document.getElementById('cancelDelete').addEventListener('click', () => {
+                document.getElementById('deleteModal').classList.add('hidden');
+            });
+            
+            document.getElementById('confirmDelete').addEventListener('click', deleteComplaint);
+        }
+
+        async function loadComplaints() {
+            try {
+                document.getElementById('loadingIndicator').classList.remove('hidden');
+                document.getElementById('complaintsContainer').classList.add('hidden');
+                
+                const response = await fetch('http://localhost:8080/api/feedback');
+                if (!response.ok) throw new Error('Failed to load complaints');
+                
+                complaints = await response.json();
+                displayComplaints();
+                
+                document.getElementById('loadingIndicator').classList.add('hidden');
+                document.getElementById('complaintsContainer').classList.remove('hidden');
+            } catch (error) {
+                console.error('Error loading complaints:', error);
+                showMessage('Error loading complaints: ' + error.message, 'error');
+                document.getElementById('loadingIndicator').classList.add('hidden');
+            }
+        }
+
+        function displayComplaints() {
+            const container = document.getElementById('complaintsContainer');
+            container.innerHTML = '';
+
+            if (complaints.length === 0) {
+                container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:40px">No complaints found</div>';
+                return;
+            }
+
+            complaints.forEach(complaint => {
+                const complaintDiv = document.createElement('div');
+                complaintDiv.className = 'complaint-details';
+                
+                const hasReply = complaint.reply && complaint.reply.trim() !== '';
+                const statusClass = hasReply ? 'status-replied' : 'status-pending';
+                const statusText = hasReply ? 'Replied' : 'Pending';
+                
+                complaintDiv.innerHTML = `
+                    <div class="complaint-meta">
+                        <span><strong>ID:</strong> #${complaint.feedbackId}</span>
+                        <span><strong>Name:</strong> ${complaint.name}</span>
+                        <span><strong>Type:</strong> ${complaint.type}</span>
+                        <span><strong>Date:</strong> ${complaint.complainDate || 'N/A'}</span>
+                        <span><strong>Time:</strong> ${complaint.complainTime || 'N/A'}</span>
+                        <span class="status-badge ${statusClass}">${statusText}</span>
+                    </div>
+                    <div class="complaint-description">
+                        <strong>Description:</strong><br>
+                        ${complaint.description}
+                    </div>
+                    ${hasReply ? `
+                        <div class="reply-section">
+                            <div class="reply-label">Admin Reply:</div>
+                            <div>${complaint.reply}</div>
+                            ${complaint.type === 'complain' ? `<button onclick="openEditReplyModal(${complaint.feedbackId})" class="button small" style="margin-top:8px">Edit Reply</button>` : ''}
+                        </div>
+                    ` : ''}
+                    <div class="actions" style="margin-top:12px">
+                        ${!hasReply && complaint.type === 'complain' ? `<button onclick="openReplyModal(${complaint.feedbackId})" class="button small">Reply</button>` : ''}
+                        <button onclick="viewComplaintDetails(${complaint.feedbackId})" class="button small info">View Details</button>
+                        <button onclick="openDeleteModal(${complaint.feedbackId})" class="button small danger">Delete</button>
+                    </div>
+                `;
+                
+                container.appendChild(complaintDiv);
+            });
+        }
+
+        function filterComplaints() {
+            const typeFilter = document.getElementById('typeFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            
+            let filteredComplaints = complaints;
+            
+            if (typeFilter) {
+                filteredComplaints = filteredComplaints.filter(c => c.type === typeFilter);
+            }
+            
+            if (statusFilter) {
+                if (statusFilter === 'pending') {
+                    filteredComplaints = filteredComplaints.filter(c => !c.reply || c.reply.trim() === '');
+                } else if (statusFilter === 'replied') {
+                    filteredComplaints = filteredComplaints.filter(c => c.reply && c.reply.trim() !== '');
+                }
+            }
+            
+            // Temporarily replace complaints array for display
+            const originalComplaints = complaints;
+            complaints = filteredComplaints;
+            displayComplaints();
+            complaints = originalComplaints;
+        }
+
+        function clearFilters() {
+            document.getElementById('typeFilter').value = '';
+            document.getElementById('statusFilter').value = '';
+            displayComplaints();
+        }
+
+        function openReplyModal(complaintId) {
+            currentComplaintId = complaintId;
+            const complaint = complaints.find(c => c.feedbackId === complaintId);
+            
+            if (complaint && complaint.type === 'complain') {
+                document.getElementById('complaintDetails').innerHTML = `
+                    <div class="complaint-details">
+                        <div class="complaint-meta">
+                            <span><strong>ID:</strong> #${complaint.feedbackId}</span>
+                            <span><strong>Name:</strong> ${complaint.name}</span>
+                            <span><strong>Type:</strong> ${complaint.type}</span>
+                            <span><strong>Date:</strong> ${complaint.complainDate || 'N/A'}</span>
+                        </div>
+                        <div class="complaint-description">
+                            <strong>Description:</strong><br>
+                            ${complaint.description}
+                        </div>
+                    </div>
+                `;
+                document.getElementById('replyText').value = '';
+                document.getElementById('replyModal').classList.remove('hidden');
+            }
+        }
+
+        function viewComplaintDetails(complaintId) {
+            const complaint = complaints.find(c => c.feedbackId === complaintId);
+            if (complaint) {
+                alert(`Complaint Details:\n\nID: #${complaint.feedbackId}\nName: ${complaint.name}\nType: ${complaint.type}\nDate: ${complaint.complainDate}\nTime: ${complaint.complainTime}\n\nDescription:\n${complaint.description}\n\nReply: ${complaint.reply || 'No reply yet'}`);
+            }
+        }
+
+        async function sendReply() {
+            const replyText = document.getElementById('replyText').value.trim();
+            
+            if (!replyText) {
+                showMessage('Please enter a reply', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://localhost:8080/api/feedback/${currentComplaintId}/reply`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ reply: replyText })
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(error);
+                }
+
+                showMessage('Reply sent successfully!', 'success');
+                document.getElementById('replyModal').classList.add('hidden');
+                loadComplaints(); // Reload to show updated status
+            } catch (error) {
+                console.error('Error sending reply:', error);
+                showMessage('Error sending reply: ' + error.message, 'error');
+            }
+        }
+
+        function openEditReplyModal(complaintId) {
+            currentComplaintId = complaintId;
+            const complaint = complaints.find(c => c.feedbackId === complaintId);
+            
+            if (complaint && complaint.type === 'complain' && complaint.reply) {
+                document.getElementById('editComplaintDetails').innerHTML = `
+                    <div class="complaint-details">
+                        <div class="complaint-meta">
+                            <span><strong>ID:</strong> #${complaint.feedbackId}</span>
+                            <span><strong>Name:</strong> ${complaint.name}</span>
+                            <span><strong>Type:</strong> ${complaint.type}</span>
+                            <span><strong>Date:</strong> ${complaint.complainDate || 'N/A'}</span>
+                        </div>
+                        <div class="complaint-description">
+                            <strong>Description:</strong><br>
+                            ${complaint.description}
+                        </div>
+                        <div class="reply-section">
+                            <div class="reply-label">Current Reply:</div>
+                            <div style="background:rgba(255,255,255,.05);padding:8px;border-radius:4px;margin:8px 0;font-size:14px;">
+                                ${complaint.reply}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('editReplyText').value = complaint.reply;
+                document.getElementById('editReplyModal').classList.remove('hidden');
+            }
+        }
+
+        async function updateReply() {
+            const replyText = document.getElementById('editReplyText').value.trim();
+            
+            if (!replyText) {
+                showMessage('Please enter a reply', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://localhost:8080/api/feedback/${currentComplaintId}/reply`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ reply: replyText })
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(error);
+                }
+
+                showMessage('Reply updated successfully!', 'success');
+                document.getElementById('editReplyModal').classList.add('hidden');
+                loadComplaints(); // Reload to show updated reply
+            } catch (error) {
+                console.error('Error updating reply:', error);
+                showMessage('Error updating reply: ' + error.message, 'error');
+            }
+        }
+
+        function openDeleteModal(complaintId) {
+            currentComplaintId = complaintId;
+            const complaint = complaints.find(c => c.feedbackId === complaintId);
+            
+            if (complaint) {
+                const typeLabel = complaint.type === 'complain' ? 'Complaint' : 'Feedback';
+                document.getElementById('deleteComplaintDetails').innerHTML = `
+                    <div class="complaint-details">
+                        <div class="complaint-meta">
+                            <span><strong>ID:</strong> #${complaint.feedbackId}</span>
+                            <span><strong>Name:</strong> ${complaint.name}</span>
+                            <span><strong>Type:</strong> ${typeLabel}</span>
+                            <span><strong>Date:</strong> ${complaint.complainDate || 'N/A'}</span>
+                        </div>
+                        <div class="complaint-description">
+                            <strong>Description:</strong><br>
+                            ${complaint.description}
+                        </div>
+                        ${complaint.reply ? `
+                            <div class="reply-section">
+                                <div class="reply-label">Reply:</div>
+                                <div>${complaint.reply}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+                document.getElementById('deleteModal').classList.remove('hidden');
+            }
+        }
+
+        async function deleteComplaint() {
+            if (!currentComplaintId) {
+                showMessage('No complaint selected for deletion', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://localhost:8080/api/feedback/${currentComplaintId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(error);
+                }
+
+                const complaint = complaints.find(c => c.feedbackId === currentComplaintId);
+                const typeLabel = complaint && complaint.type === 'complain' ? 'Complaint' : 'Feedback';
+                
+                showMessage(`${typeLabel} deleted successfully!`, 'success');
+                document.getElementById('deleteModal').classList.add('hidden');
+                loadComplaints(); // Reload to show updated list
+            } catch (error) {
+                console.error('Error deleting complaint:', error);
+                showMessage('Error deleting complaint: ' + error.message, 'error');
+            }
+        }
+
+        function showMessage(message, type) {
+            const container = document.getElementById('messageContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type === 'error' ? 'error' : 'success';
+            messageDiv.textContent = message;
+            
+            container.innerHTML = '';
+            container.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

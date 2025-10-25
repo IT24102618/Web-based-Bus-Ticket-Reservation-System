@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ticketing Dashboard • Bus Reservation</title>
+    <style>
+        :root { 
+            --bg:#0f172a; 
+            --muted:#94a3b8; 
+            --text:#e5e7eb; 
+            --primary:#22c55e; 
+            --primary-600:#16a34a; 
+            --input:#1f2937; 
+            --ring:rgba(34,197,94,.35); 
+            --card:#111827;
+            --danger:#ef4444;
+            --danger-600:#dc2626;
+            --warning:#f59e0b;
+            --warning-600:#d97706;
+            --info:#3b82f6;
+            --info-600:#2563eb;
+        }
+        html,body{height:100%}
+        body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica Neue,Arial;color:var(--text);background:linear-gradient(0deg,#0b1220,var(--bg));}
+        .layout{display:flex;min-height:100vh}
+        .sidebar{width:240px;background:#0c1324;border-right:1px solid rgba(148,163,184,.15);padding:16px;position:sticky;top:0;height:100vh}
+        .brand{font-weight:800;margin:0 0 14px}
+        .menu{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+        .menu a{display:block;color:#e5e7eb;text-decoration:none;padding:10px 12px;border-radius:10px}
+        .menu a:hover{background:rgba(148,163,184,.12)}
+        .menu a.active{background:rgba(34,197,94,.15);color:var(--primary)}
+        .content{flex:1;padding:24px}
+        .topbar{position:sticky;top:0;z-index:5;background:rgba(12,19,36,.85);backdrop-filter:blur(8px);border-bottom:1px solid rgba(148,163,184,.15);display:flex;justify-content:flex-end;align-items:center;padding:10px 16px;margin:-24px -24px 24px -24px}
+        .button{appearance:none;border:0;padding:10px 12px;border-radius:10px;background:linear-gradient(180deg,var(--primary),var(--primary-600));color:#fff;font-weight:600;cursor:pointer}
+        .button.danger{background:linear-gradient(180deg,var(--danger),var(--danger-600))}
+        .button.warning{background:linear-gradient(180deg,var(--warning),var(--warning-600))}
+        .button.info{background:linear-gradient(180deg,var(--info),var(--info-600))}
+        .button.small{padding:6px 10px;font-size:12px}
+        .h1{font-size:22px;margin:0 0 24px}
+        .card{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01));border:1px solid rgba(148,163,184,.15);border-radius:14px;padding:20px;margin-bottom:16px}
+        .hero{text-align:center;padding:40px 20px;background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.2);border-radius:12px;margin-bottom:24px}
+        .hero h1{font-size:28px;margin:0 0 8px;color:var(--primary)}
+        .hero p{color:var(--muted);font-size:16px;margin:0}
+        .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+        .stat-card{background:rgba(255,255,255,.02);border:1px solid rgba(148,163,184,.1);border-radius:10px;padding:16px;text-align:center}
+        .stat-number{font-size:24px;font-weight:700;color:var(--primary);margin-bottom:4px}
+        .stat-label{font-size:14px;color:var(--muted)}
+        .quick-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+        .action-card{background:rgba(255,255,255,.02);border:1px solid rgba(148,163,184,.1);border-radius:10px;padding:20px;text-align:center;transition:transform 0.2s}
+        .action-card:hover{transform:translateY(-2px)}
+        .action-icon{font-size:32px;margin-bottom:12px}
+        .action-title{font-size:16px;font-weight:600;margin-bottom:8px}
+        .action-desc{font-size:14px;color:var(--muted);margin-bottom:16px}
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <button id="signout" class="button">Sign out</button>
+    </div>
+    <div class="layout">
+        <aside class="sidebar">
+            <h2 class="brand">Ticketing Dashboard</h2>
+            <ul class="menu">
+                <li><a href="ticketsbooking.html">Ticket Management</a></li>
+            </ul>
+        </aside>
+        <main class="content">
+            <div class="hero">
+                <h1>Welcome to Ticketing Dashboard</h1>
+                <p>Manage bookings, create tickets, and handle customer reservations</p>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="userCount">0</div>
+                    <div class="stat-label">Total Users</div>
+                </div>
+            </div>
+            
+           
+        </main>
+    </div>
+
+    <script>
+        // Load dashboard statistics
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDashboardStats();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            document.getElementById('signout').addEventListener('click', () => {
+                localStorage.removeItem('currentUser');
+                window.location.href = 'login.html';
+            });
+        }
+
+        async function loadDashboardStats() {
+            try {
+                // Load users and count only those with role "Passenger"
+                const usersResponse = await fetch('http://localhost:8080/api/users');
+                if (usersResponse.ok) {
+                    const users = await usersResponse.json();
+                    const userCount = users.filter(user => user.role === 'Passenger').length;
+                    document.getElementById('userCount').textContent = userCount;
+                }
+            } catch (error) {
+                console.error('Error loading dashboard stats:', error);
+            }
+        }
+    </script>
+</body>
+</html>

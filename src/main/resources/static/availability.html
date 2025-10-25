@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Availability • Bus Reservation</title>
+	<style>
+		:root { --bg:#0f172a; --muted:#94a3b8; --text:#e5e7eb; --primary:#22c55e; --card:#111827; }
+		html,body{height:100%}
+		body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica Neue,Arial;color:var(--text);background:linear-gradient(0deg,#0b1220,var(--bg));}
+		.container{max-width:1100px;margin:24px auto;padding:0 16px}
+		.h1{font-size:22px;margin:16px 0;text-align:center}
+		.table{width:100%;border-collapse:separate;border-spacing:0 10px}
+		.thead th{color:var(--muted);font-weight:600;text-align:left;padding:8px 10px}
+		.tbody tr{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01));border:1px solid rgba(148,163,184,.15)}
+		.tbody td{padding:12px 10px;border-top:1px solid rgba(148,163,184,.15);border-bottom:1px solid rgba(148,163,184,.15)}
+		.card{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01));border:1px solid rgba(148,163,184,.15);border-radius:14px;padding:16px;margin-top:16px}
+		.meta{color:var(--muted);text-align:center}
+		.link{color:var(--primary);text-decoration:none}
+		.link:hover{text-decoration:underline}
+		.bus-radio{width:18px;height:18px;accent-color:var(--primary);cursor:pointer}
+		.checkout-btn{appearance:none;border:0;padding:12px 24px;border-radius:8px;background:linear-gradient(180deg,var(--primary),#16a34a);color:#fff;font-weight:600;cursor:pointer;font-size:16px;margin-top:16px;width:100%;max-width:300px}
+		.checkout-btn:hover{background:linear-gradient(180deg,#16a34a,var(--primary))}
+		.checkout-btn:disabled{background:#6b7280;cursor:not-allowed}
+		.checkout-container{text-align:center;margin-top:20px}
+	</style>
+</head>
+<body>
+	<main class="container">
+		<h1 class="h1">Check Availability</h1>
+		<div class="meta" id="meta"></div>
+		<div class="card">
+			<table class="table">
+				<thead class="thead">
+					<tr>
+						<th>Select</th>
+						<th>Bus Registration Number</th>
+						<th>Arrival</th>
+						<th>Departs</th>
+						<th>Availability</th>
+						<th>Price</th>
+					</tr>
+				</thead>
+				<tbody class="tbody" id="rows"></tbody>
+			</table>
+		</div>
+		<div class="checkout-container">
+			<button id="checkoutBtn" class="checkout-btn" disabled>Proceed to Checkout</button>
+		</div>
+		<div class="meta" style="margin-top:12px"><a class="link" href="booking.html">Back to search</a></div>
+	</main>
+	<script>
+		let schedules = []; // Make schedules accessible globally
+		
+		// Function to check if user is logged in
+		function isUserLoggedIn() {
+			const currentUser = localStorage.getItem('currentUser');
+			console.log('Current user data:', currentUser); // Debug log
+			
+			if (!currentUser) {
+				console.log('No current user found in localStorage');
+				return false;
+			}
+			
+			try {
+				const user = JSON.parse(currentUser);
+				console.log('Parsed user object:', user); // Debug log
+				
+				// Check if user has required fields and is a passenger
+				const isValid = user && user.id && (user.role === 'Passenger' || !user.role);
+				console.log('User validation result:', isValid); // Debug log
+				return isValid;
+			} catch (error) {
+				console.error('Error parsing user data:', error);
+				return false;
+			}
+		}
+		
+		// Function to redirect to login with return URL
+		function redirectToLogin() {
+			const currentUrl = window.location.href;
+			localStorage.setItem('returnUrl', currentUrl);
+			window.location.href = 'login.html';
+		}
+		
+		function getParam(name){const url=new URL(window.location.href);return url.searchParams.get(name)||''}
+		const from=getParam('from');
+		const to=getParam('to');
+		const date=getParam('date');
+		document.getElementById('meta').textContent = `From ${from} to ${to} on ${date}`;
+		fetch(`/api/schedules?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&date=${encodeURIComponent(date)}`)
+			.then(r=>r.json())
+			.then(async list=>{
+				console.log('API Response:', list); // Debug log
+				schedules = list; // Store schedules globally
+				const rows=document.getElementById('rows');
+				if(!Array.isArray(list) || list.length===0){
+					rows.innerHTML = '<tr><td colspan="6" style="color:var(--muted);padding:16px;text-align:center">No buses found</td></tr>';
+					return;
+				}
+				
+				// Fetch available tickets for each schedule from SeatBalance table
+				const schedulesWithAvailability = await Promise.all(list.map(async (schedule) => {
+					try {
+						const response = await fetch(`/api/seat-balance/schedule/${schedule.scheduleId}`);
+						const data = await response.json();
+						return {
+							...schedule,
+							availableTickets: data.availableTickets || (schedule.bus ? schedule.bus.noOfSeats : 0)
+						};
+					} catch (error) {
+						console.error(`Error fetching available tickets for schedule ${schedule.scheduleId}:`, error);
+						// If no seat balance record exists, show full bus capacity
+						return {
+							...schedule,
+							availableTickets: schedule.bus ? schedule.bus.noOfSeats : 0
+						};
+					}
+				}));
+				
+				// Update schedules with availability data
+				schedules = schedulesWithAvailability;
+				
+				rows.innerHTML = schedulesWithAvailability.map(i=>`<tr>
+					<td><input type="radio" name="bus-selection" class="bus-radio" data-schedule-id="${i.scheduleId}" onchange="handleBusSelection()"></td>
+					<td>${i.bus ? i.bus.registrationNo : 'N/A'}</td>
+					<td>${i.startTime || 'N/A'}</td>
+					<td>${i.endTime || 'N/A'}</td>
+					<td>${i.availableTickets} seats available</td>
+					<td>${i.fare ? 'Rs. ' + i.fare : 'Not set'}</td>
+				</tr>`).join('');
+			})
+			.catch(error=>{
+				console.error('Error loading schedules:', error);
+				document.getElementById('rows').innerHTML = '<tr><td colspan="6" style="color:var(--muted);padding:16px;text-align:center">Failed to load availability</td></tr>';
+			});
+
+		// Function to handle radio button selection
+		function handleBusSelection() {
+			const radios = document.querySelectorAll('.bus-radio');
+			const checkoutBtn = document.getElementById('checkoutBtn');
+			let selectedCount = 0;
+			
+			radios.forEach(radio => {
+				if (radio.checked) {
+					selectedCount++;
+				}
+			});
+			
+			// Enable/disable checkout button based on selection
+			if (selectedCount > 0) {
+				checkoutBtn.disabled = false;
+				checkoutBtn.textContent = 'Proceed to Checkout';
+			} else {
+				checkoutBtn.disabled = true;
+				checkoutBtn.textContent = 'Proceed to Checkout';
+			}
+		}
+
+		// Function to proceed to checkout with selected bus
+		function proceedToCheckout() {
+			// Check if user is logged in first
+			if (!isUserLoggedIn()) {
+				alert('Please login to proceed with booking');
+				redirectToLogin();
+				return;
+			}
+			
+			const selectedRadio = document.querySelector('.bus-radio:checked');
+			if (!selectedRadio) {
+				alert('Please select a bus');
+				return;
+			}
+
+			const scheduleId = parseInt(selectedRadio.getAttribute('data-schedule-id'));
+			
+			// Find the selected schedule from the list
+			const selectedSchedule = schedules.find(s => s.scheduleId === scheduleId);
+			if (!selectedSchedule) {
+				alert('Schedule not found');
+				return;
+			}
+
+			// Get the booking data from localStorage (set in booking.html)
+			const pendingBooking = JSON.parse(localStorage.getItem('pendingBooking') || '{}');
+			
+			// Create checkout data with schedule and booking info
+			const checkoutData = {
+				schedule: selectedSchedule,
+				count: pendingBooking.count || 1,
+				from: pendingBooking.from,
+				to: pendingBooking.to,
+				date: pendingBooking.date
+			};
+
+			// Store checkout data in localStorage
+			localStorage.setItem('checkoutData', JSON.stringify(checkoutData));
+			
+			// Navigate to checkout page
+			window.location.href = 'checkout.html';
+		}
+
+		// Add event listener to checkout button
+		document.addEventListener('DOMContentLoaded', () => {
+			const checkoutBtn = document.getElementById('checkoutBtn');
+			checkoutBtn.addEventListener('click', proceedToCheckout);
+		});
+	</script>
+</body>
+</html>
+
+
+
+

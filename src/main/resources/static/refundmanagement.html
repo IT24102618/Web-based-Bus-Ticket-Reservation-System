@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Refund Management • Finance Dashboard</title>
+	<style>
+		:root { 
+			--bg:#0f172a; 
+			--muted:#94a3b8; 
+			--text:#e5e7eb; 
+			--primary:#22c55e; 
+			--primary-600:#16a34a; 
+			--input:#1f2937; 
+			--ring:rgba(34,197,94,.35);
+			--card:#111827;
+			--danger:#ef4444;
+			--success:#10b981;
+			--warning:#f59e0b;
+		}
+		html,body{height:100%}
+		body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica Neue,Arial;color:var(--text);background:linear-gradient(0deg,#0b1220,var(--bg));}
+		.layout{display:flex;min-height:100vh}
+		.sidebar{width:240px;background:#0c1324;border-right:1px solid rgba(148,163,184,.15);padding:16px;position:sticky;top:0;height:100vh}
+		.brand{font-weight:800;margin:0 0 14px}
+		.menu{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+		.menu a{display:block;color:#e5e7eb;text-decoration:none;padding:10px 12px;border-radius:10px}
+		.menu a:hover{background:rgba(148,163,184,.12)}
+		.menu a.active{background:rgba(34,197,94,.15);color:var(--primary)}
+		.content{flex:1;padding:24px}
+		.topbar{position:sticky;top:0;z-index:5;background:rgba(12,19,36,.85);backdrop-filter:blur(8px);border-bottom:1px solid rgba(148,163,184,.15);display:flex;justify-content:flex-end;align-items:center;padding:10px 16px;margin:-24px -24px 24px -24px}
+		.button{appearance:none;border:0;padding:10px 12px;border-radius:10px;background:linear-gradient(180deg,var(--primary),var(--primary-600));color:#fff;font-weight:600;cursor:pointer;transition:all 0.2s}
+		.button:hover{filter:brightness(1.05)}
+		.button:disabled{background:#6b7280;cursor:not-allowed}
+		.button.secondary{background:rgba(148,163,184,.2);color:var(--text)}
+		.button.secondary:hover{background:rgba(148,163,184,.3)}
+		.button.danger{background:linear-gradient(180deg,var(--danger),#dc2626);color:#fff}
+		.button.danger:hover{filter:brightness(1.05)}
+		.button.success{background:linear-gradient(180deg,var(--success),#059669);color:#fff}
+		.button.success:hover{filter:brightness(1.05)}
+		.button.small{padding:6px 10px;font-size:12px}
+		.h1{font-size:22px;margin:0 0 24px}
+		.card{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01));border:1px solid rgba(148,163,184,.15);border-radius:14px;padding:20px;margin-bottom:16px}
+		.refund-card{background:rgba(255,255,255,.02);border:1px solid rgba(148,163,184,.1);border-radius:10px;padding:16px;margin-bottom:12px}
+		.refund-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+		.refund-id{font-weight:600;color:var(--primary)}
+		.refund-status{padding:4px 8px;border-radius:6px;font-size:12px;font-weight:500}
+		.refund-status.requested{background:rgba(245,158,11,.2);color:#f59e0b}
+		.refund-status.accepted{background:rgba(16,185,129,.2);color:#10b981}
+		.refund-details{display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:14px;color:var(--muted);margin-bottom:12px}
+		.refund-route{font-weight:500;color:var(--text)}
+		.refund-actions{display:flex;gap:8px;justify-content:flex-end}
+		.hidden{display:none}
+		.message{padding:12px;border-radius:8px;margin-bottom:16px;font-size:14px}
+		.message.success{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:#10b981}
+		.message.error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#ef4444}
+		.loading{text-align:center;padding:20px;color:var(--muted)}
+		.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+		.stat-card{background:rgba(255,255,255,.02);border:1px solid rgba(148,163,184,.1);border-radius:10px;padding:16px;text-align:center}
+		.stat-number{font-size:24px;font-weight:700;color:var(--primary);margin-bottom:4px}
+		.stat-label{font-size:14px;color:var(--muted)}
+		.filter-tabs{display:flex;gap:8px;margin-bottom:16px}
+		.filter-tab{padding:8px 16px;border-radius:8px;background:rgba(148,163,184,.1);color:var(--muted);cursor:pointer;transition:all 0.2s}
+		.filter-tab.active{background:var(--primary);color:#fff}
+		.filter-tab:hover{background:rgba(148,163,184,.2)}
+		.filter-tab.active:hover{background:var(--primary-600)}
+	</style>
+</head>
+<body>
+	<div class="topbar">
+		<button id="navSignout" class="button">Sign out</button>
+	</div>
+	<div class="layout">
+		<aside class="sidebar">
+			<h2 class="brand">Finance</h2>
+			<ul class="menu">
+				<li><a href="fare.html">Manage Fare</a></li>
+				<li><a href="refundmanagement.html">Refund Management</a></li>
+				<li><a href="viewpaymenthistory.html">View Payment History</a></li>
+			</ul>
+		</aside>
+		<main class="content">
+			<div id="messageContainer"></div>
+
+			<h1 class="h1">Refund Management</h1>
+			<p style="margin:0 0 24px;color:var(--muted)">Review and process customer refund requests</p>
+
+			<!-- Statistics -->
+			<div class="stats">
+				<div class="stat-card">
+					<div class="stat-number" id="totalRefunds">0</div>
+					<div class="stat-label">Total Refund Requests</div>
+				</div>
+				<div class="stat-card">
+					<div class="stat-number" id="pendingRefunds">0</div>
+					<div class="stat-label">Pending Requests</div>
+				</div>
+				<div class="stat-card">
+					<div class="stat-number" id="acceptedRefunds">0</div>
+					<div class="stat-label">Accepted Refunds</div>
+				</div>
+			</div>
+
+			<!-- Filter Tabs -->
+			<div class="filter-tabs">
+				<div class="filter-tab active" data-filter="all">All Requests</div>
+				<div class="filter-tab" data-filter="requested">Pending</div>
+				<div class="filter-tab" data-filter="accepted">Accepted</div>
+			</div>
+
+			<!-- Refund Requests -->
+			<div class="card">
+				<div id="refundsContainer">
+					<div class="loading">Loading refund requests...</div>
+				</div>
+			</div>
+		</main>
+	</div>
+
+	<script>
+		const PAYMENTS_API = 'http://localhost:8080/api/payments';
+		const BOOKINGS_API = 'http://localhost:8080/api/bookings';
+		let currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+		let allRefunds = [];
+		let currentFilter = 'all';
+		
+		// Check if user is finance user
+		if (!currentUser || currentUser.role !== 'Finance User') { 
+			window.location.href = 'login.html'; 
+		}
+
+		// Initialize page
+		document.addEventListener('DOMContentLoaded', () => {
+			loadRefundRequests();
+			setupEventListeners();
+		});
+
+		async function loadRefundRequests() {
+			try {
+				// Get all payments with refund requested status
+				const response = await fetch(`${PAYMENTS_API}/status/refund requested`);
+				if (response.ok) {
+					const refundPayments = await response.json();
+					
+					// Get all payments with refund accepted status
+					const acceptedResponse = await fetch(`${PAYMENTS_API}/status/refund accepted`);
+					let acceptedPayments = [];
+					if (acceptedResponse.ok) {
+						acceptedPayments = await acceptedResponse.json();
+					}
+					
+					// Combine all refund-related payments
+					allRefunds = [...refundPayments, ...acceptedPayments];
+					
+					// Update statistics
+					updateStatistics();
+					
+					// Display refunds
+					displayRefunds();
+				} else {
+					document.getElementById('refundsContainer').innerHTML = '<div class="loading">No refund requests found</div>';
+				}
+			} catch (error) {
+				console.error('Error loading refund requests:', error);
+				document.getElementById('refundsContainer').innerHTML = '<div class="loading">Error loading refund requests</div>';
+			}
+		}
+
+		function updateStatistics() {
+			const total = allRefunds.length;
+			const pending = allRefunds.filter(refund => refund.paymentStatus === 'refund requested').length;
+			const accepted = allRefunds.filter(refund => refund.paymentStatus === 'refund accepted').length;
+			
+			document.getElementById('totalRefunds').textContent = total;
+			document.getElementById('pendingRefunds').textContent = pending;
+			document.getElementById('acceptedRefunds').textContent = accepted;
+		}
+
+		function displayRefunds() {
+			const container = document.getElementById('refundsContainer');
+			
+			// Filter refunds based on current filter
+			let filteredRefunds = allRefunds;
+			if (currentFilter === 'requested') {
+				filteredRefunds = allRefunds.filter(refund => refund.paymentStatus === 'refund requested');
+			} else if (currentFilter === 'accepted') {
+				filteredRefunds = allRefunds.filter(refund => refund.paymentStatus === 'refund accepted');
+			}
+			
+			if (filteredRefunds.length === 0) {
+				container.innerHTML = '<div class="loading">No refund requests found</div>';
+				return;
+			}
+
+			container.innerHTML = filteredRefunds.map(refund => {
+				const booking = refund.booking || {};
+				const schedule = booking.schedule || {};
+				const route = schedule.route || {};
+				const bus = schedule.bus || {};
+				const user = booking.user || {};
+				
+				const statusClass = refund.paymentStatus === 'refund requested' ? 'requested' : 'accepted';
+				const statusText = refund.paymentStatus === 'refund requested' ? 'Pending' : 'Accepted';
+				const showActions = refund.paymentStatus === 'refund requested';
+				
+				return `
+					<div class="refund-card">
+						<div class="refund-header">
+							<span class="refund-id">Refund #${refund.paymentId}</span>
+							<span class="refund-status ${statusClass}">${statusText}</span>
+						</div>
+						<div class="refund-details">
+							<div>
+								<div class="refund-route">${route.fromStand || 'N/A'} → ${route.toStand || 'N/A'}</div>
+								<div>Booking ID: #${booking.bookingId || 'N/A'}</div>
+								<div>Date: ${schedule.travelDate || 'N/A'}</div>
+								<div>Time: ${schedule.startTime || 'N/A'} - ${schedule.endTime || 'N/A'}</div>
+							</div>
+							<div>
+								<div>Customer: ${booking.firstName || ''} ${booking.lastName || ''}</div>
+								<div>Email: ${booking.email || 'N/A'}</div>
+								<div>Phone: ${booking.phone || 'N/A'}</div>
+								<div>Bus: ${bus.registrationNo || 'N/A'}</div>
+								<div>Tickets: ${booking.bookedTickets || 1}</div>
+								<div>Amount: Rs. ${refund.totalPrice || 'N/A'}</div>
+							</div>
+						</div>
+						${showActions ? `
+							<div class="refund-actions">
+								<button class="button success" onclick="acceptRefund(${refund.paymentId})">
+									Accept Refund
+								</button>
+								<button class="button secondary" onclick="rejectRefund(${refund.paymentId})">
+									Reject
+								</button>
+							</div>
+						` : ''}
+					</div>
+				`;
+			}).join('');
+		}
+
+		async function acceptRefund(paymentId) {
+			try {
+				const response = await fetch(`${PAYMENTS_API}/${paymentId}/status`, {
+					method: 'PUT',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({
+						paymentStatus: 'refund accepted'
+					})
+				});
+				
+				if (response.ok) {
+					showMessage('Refund request accepted successfully!', 'success');
+					// Reload refund requests
+					await loadRefundRequests();
+				} else {
+					showMessage('Failed to accept refund request. Please try again.', 'error');
+				}
+			} catch (error) {
+				console.error('Error accepting refund:', error);
+				showMessage('Error accepting refund request. Please try again.', 'error');
+			}
+		}
+
+		async function rejectRefund(paymentId) {
+			if (!confirm('Are you sure you want to reject this refund request?')) {
+				return;
+			}
+			
+			try {
+				const response = await fetch(`${PAYMENTS_API}/${paymentId}/status`, {
+					method: 'PUT',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({
+						paymentStatus: 'paid'
+					})
+				});
+				
+				if (response.ok) {
+					showMessage('Refund request rejected successfully!', 'success');
+					// Reload refund requests
+					await loadRefundRequests();
+				} else {
+					showMessage('Failed to reject refund request. Please try again.', 'error');
+				}
+			} catch (error) {
+				console.error('Error rejecting refund:', error);
+				showMessage('Error rejecting refund request. Please try again.', 'error');
+			}
+		}
+
+		function setupEventListeners() {
+			// Filter tabs
+			document.querySelectorAll('.filter-tab').forEach(tab => {
+				tab.addEventListener('click', () => {
+					// Remove active class from all tabs
+					document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+					// Add active class to clicked tab
+					tab.classList.add('active');
+					// Update current filter
+					currentFilter = tab.dataset.filter;
+					// Redisplay refunds
+					displayRefunds();
+				});
+			});
+
+			// Sign out
+			document.getElementById('navSignout').addEventListener('click', () => {
+				localStorage.removeItem('currentUser');
+				window.location.href = 'index.html';
+			});
+		}
+
+		function showMessage(message, type) {
+			const container = document.getElementById('messageContainer');
+			const messageDiv = document.createElement('div');
+			messageDiv.className = `message ${type}`;
+			messageDiv.textContent = message;
+			
+			container.innerHTML = '';
+			container.appendChild(messageDiv);
+			
+			setTimeout(() => {
+				messageDiv.remove();
+			}, 5000);
+		}
+	</script>
+</body>
+</html>

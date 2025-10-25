@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Book Your Seat • Bus Reservation</title>
+	<style>
+		:root { --bg:#0f172a; --muted:#94a3b8; --text:#e5e7eb; --primary:#22c55e; --primary-600:#16a34a; --input:#1f2937; --ring:rgba(34,197,94,.35) }
+		html,body{height:100%}
+		body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica Neue,Arial;color:var(--text);background:linear-gradient(0deg,#0b1220,var(--bg));display:grid;place-items:center;padding:24px}
+		.card{width:100%;max-width:680px;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01));border:1px solid rgba(148,163,184,.15);border-radius:14px;padding:24px}
+		.h1{font-size:22px;margin:0 0 6px;text-align:center}
+		.p{color:var(--muted);margin:0 0 16px;text-align:center}
+		.form{display:grid;gap:16px;justify-items:center}
+		.label{font-size:13px;color:var(--muted)}
+		.input, .select{width:100%;max-width:360px;padding:12px 14px;border-radius:10px;border:1px solid rgba(148,163,184,.25);background:var(--input);color:var(--text);outline:none;margin:0 auto}
+		.input:focus, .select:focus{box-shadow:0 0 0 4px var(--ring);border-color:var(--primary)}
+		.label{text-align:center}
+		@media (max-width: 640px){.input, .select{max-width:100%}}
+		.button{appearance:none;border:0;padding:12px 16px;border-radius:10px;background:linear-gradient(180deg,var(--primary),var(--primary-600));color:#fff;font-weight:600;cursor:pointer}
+		.row{display:flex;justify-content:center;align-items:center;gap:12px}
+		.link{color:var(--primary);text-decoration:none}
+		.link:hover{text-decoration:underline}
+	</style>
+</head>
+<body>
+	<div class="card">
+		<h1 class="h1">Book Your Seat</h1>
+		<p class="p">Fill in your trip details below</p>
+		<form class="form" id="bookingForm">
+		<div>
+			<div class="label">District</div>
+			<select id="district" class="select" required>
+				<option value="">Select District</option>
+			</select>
+		</div>
+		<div>
+			<div class="label">From stand</div>
+			<select id="from" class="select" required disabled>
+				<option value="">Select From Location</option>
+			</select>
+		</div>
+		<div>
+			<div class="label">To stand</div>
+			<select id="to" class="select" required disabled>
+				<option value="">Select To Location</option>
+			</select>
+		</div>
+		<div>
+			<div class="label">Date</div>
+			<input id="date" class="input" type="date" required />
+		</div>
+			<div>
+				<div class="label">Ticket count</div>
+				<input id="count" class="input" type="number" min="1" value="1" required />
+			</div>
+			<div class="row">
+				<button class="button" type="submit">Search & Continue</button>
+			</div>
+		</form>
+	</div>
+
+	<script>
+		// Sri Lankan districts
+		const districts = [
+			'Colombo', 'Gampaha', 'Kalutara', 'Kandy', 'Matale', 'Nuwara Eliya',
+			'Galle', 'Matara', 'Hambantota', 'Jaffna', 'Kilinochchi', 'Mannar',
+			'Vavuniya', 'Mullaitivu', 'Batticaloa', 'Ampara', 'Trincomalee',
+			'Kurunegala', 'Puttalam', 'Anuradhapura', 'Polonnaruwa', 'Badulla',
+			'Monaragala', 'Ratnapura', 'Kegalle'
+		];
+
+		// District to stands mapping
+		const districtStands = {
+			"Galle": [
+				"Galle", "Udugama", "Hikkaduwa", "Ambalangoda", "Bentota", "Koggala", 
+				"Unawatuna", "Weligama", "Mirissa", "Ahangama", "Kosgoda", "Balapitiya"
+			],
+			"Colombo": [
+				"Colombo", "Fort", "Pettah", "Bambalapitiya", "Wellawatta", "Dehiwala", 
+				"Mount Lavinia", "Moratuwa", "Panadura", "Kalutara", "Wattala", "Negombo"
+			],
+			"Kandy": [
+				"Kandy", "Peradeniya", "Kadugannawa", "Gampola", "Nawalapitiya", 
+				"Talawakele", "Hatton", "Nuwara Eliya", "Matale", "Dambulla"
+			],
+			"Matara": [
+				"Matara", "Weligama", "Mirissa", "Dikwella", "Tangalle", "Hambantota", 
+				"Tissamaharama", "Kataragama", "Weeraketiya", "Beliatte"
+			],
+			"Jaffna": [
+				"Jaffna", "Point Pedro", "Chavakachcheri", "Kilinochchi", "Mullaitivu", 
+				"Vavuniya", "Mannar", "Poonakari", "Nallur", "Kopay"
+			],
+			"Kurunegala": [
+				"Kurunegala", "Kuliyapitiya", "Nikaweratiya", "Puttalam", "Chilaw", 
+				"Anuradhapura", "Polonnaruwa", "Dambulla", "Maho", "Galgamuwa"
+			],
+			"Badulla": [
+				"Badulla", "Bandarawela", "Haputale", "Ella", "Wellawaya", "Monaragala", 
+				"Bibile", "Siyambalanduwa", "Ampara", "Kalmunai"
+			],
+			"Ratnapura": [
+				"Ratnapura", "Balangoda", "Eheliyagoda", "Kuruwita", "Embilipitiya", 
+				"Pelmadulla", "Kahawatta", "Nivithigala", "Rakwana", "Godakawela"
+			],
+			"Kegalle": [
+				"Kegalle", "Mawanella", "Rambukkana", "Warakapola", "Galigamuwa", 
+				"Aranayake", "Bulathkohupitiya", "Dehiowita", "Deraniyagala", "Yatiyantota"
+			],
+			"Kalutara": [
+				"Kalutara", "Panadura", "Moratuwa", "Beruwala", "Aluthgama", "Bentota", 
+				"Kosgoda", "Ahungalla", "Balapitiya", "Ambalangoda"
+			],
+			"Gampaha": [
+				"Gampaha", "Negombo", "Wattala", "Ja-Ela", "Katunayake", "Seeduwa", 
+				"Minuwangoda", "Veyangoda", "Nittambuwa", "Mirigama"
+			],
+			"Hambantota": [
+				"Hambantota", "Tangalle", "Tissamaharama", "Kataragama", "Weeraketiya", 
+				"Beliatte", "Ambalantota", "Ranna", "Katuwana", "Angunakolapelessa"
+			],
+			"Batticaloa": [
+				"Batticaloa", "Kalmunai", "Ampara", "Akkaraipattu", "Sainthamaruthu", 
+				"Kattankudy", "Eravur", "Valaichchenai", "Chenkalady", "Kokkadichcholai"
+			],
+			"Trincomalee": [
+				"Trincomalee", "Kinniya", "Muttur", "Kantalai", "Seruwila", "Gomarankadawala", 
+				"Kuchchaveli", "Nilaveli", "Uppuveli", "Koneswaram"
+			],
+			"Anuradhapura": [
+				"Anuradhapura", "Polonnaruwa", "Dambulla", "Sigiriya", "Habarana", 
+				"Kekirawa", "Mihintale", "Thambuttegama", "Eppawala", "Nochchiyagama"
+			],
+			"Polonnaruwa": [
+				"Polonnaruwa", "Hingurakgoda", "Kaduruwela", "Medirigiriya", "Lankapura", 
+				"Welikanda", "Dimbulagala", "Manampitiya", "Elahara", "Giritale"
+			],
+			"Nuwara Eliya": [
+				"Nuwara Eliya", "Hatton", "Talawakele", "Nanu Oya", "Ragala", "Welimada", 
+				"Kotagala", "Maskeliya", "Norwood", "Lindula"
+			],
+			"Matale": [
+				"Matale", "Dambulla", "Sigiriya", "Habarana", "Naula", "Rattota", 
+				"Ukuwela", "Palapathwela", "Laggala", "Wilgamuwa"
+			],
+			"Mannar": [
+				"Mannar", "Pesalai", "Nanattan", "Madhu", "Murunkan", "Vankalai", 
+				"Thalaimannar", "Erukkalampiddy", "Pallimunai", "Uyilankulam"
+			],
+			"Vavuniya": [
+				"Vavuniya", "Omanthai", "Cheddikulam", "Nedunkerny", "Puliyankulam", 
+				"Mamaduwa", "Poovarasankulam", "Periyamadu", "Kovilkulam", "Pampaimadu"
+			],
+			"Mullaitivu": [
+				"Mullaitivu", "Puthukkudiyiruppu", "Oddusuddan", "Mulliyawalai", 
+				"Kokkuthoduvai", "Alampil", "Kumulamunai", "Nayaru", "Vellamullivaikkal", "Karunaadu"
+			],
+			"Kilinochchi": [
+				"Kilinochchi", "Pallai", "Iranamadu", "Paranthan", "Akkarayankulam", 
+				"Kandawalai", "Poonakari", "Mullaitivu", "Elephant Pass", "Chundikulam"
+			],
+			"Ampara": [
+				"Ampara", "Kalmunai", "Akkaraipattu", "Sainthamaruthu", "Sammanthurai", 
+				"Pottuvil", "Arugam Bay", "Lahugala", "Uhana", "Maha Oya"
+			],
+			"Puttalam": [
+				"Puttalam", "Chilaw", "Wennappuwa", "Marawila", "Nattandiya", "Madampe", 
+				"Anamaduwa", "Kalpitiya", "Vanathavilluwa", "Karuwalagaswewa"
+			],
+			"Monaragala": [
+				"Monaragala", "Bibile", "Siyambalanduwa", "Wellawaya", "Buttala", 
+				"Kataragama", "Tissamaharama", "Hambantota", "Tanamalwila", "Medagama"
+			]
+		};
+
+		// Populate district dropdown
+		function populateDistricts() {
+			const districtSelect = document.getElementById('district');
+			
+			districts.forEach(district => {
+				const option = document.createElement('option');
+				option.value = district;
+				option.textContent = district;
+				districtSelect.appendChild(option);
+			});
+			
+			// Add event listener for district change
+			districtSelect.addEventListener('change', function() {
+				const selectedDistrict = this.value;
+				if (selectedDistrict) {
+					populateStandsForDistrict(selectedDistrict);
+					document.getElementById('from').disabled = false;
+					document.getElementById('to').disabled = false;
+				} else {
+					document.getElementById('from').innerHTML = '<option value="">Select From Location</option>';
+					document.getElementById('to').innerHTML = '<option value="">Select To Location</option>';
+					document.getElementById('from').disabled = true;
+					document.getElementById('to').disabled = true;
+				}
+			});
+		}
+
+		// Populate stands for selected district
+		function populateStandsForDistrict(district) {
+			const stands = districtStands[district] || [];
+			const fromSelect = document.getElementById('from');
+			const toSelect = document.getElementById('to');
+			
+			// Clear existing options
+			fromSelect.innerHTML = '<option value="">Select From Location</option>';
+			toSelect.innerHTML = '<option value="">Select To Location</option>';
+			
+			// Add stand options
+			stands.forEach(stand => {
+				const fromOption = document.createElement('option');
+				fromOption.value = stand;
+				fromOption.textContent = stand;
+				fromSelect.appendChild(fromOption);
+				
+				const toOption = document.createElement('option');
+				toOption.value = stand;
+				toOption.textContent = stand;
+				toSelect.appendChild(toOption);
+			});
+		}
+
+		// Add typing functionality to select dropdowns
+		function initializeSearchableDropdowns() {
+			// District dropdown
+			const districtSelect = document.getElementById('district');
+			let districtSearchTimeout;
+			
+			districtSelect.addEventListener('keydown', function(e) {
+				if (e.key.length === 1 || e.key === 'Backspace') {
+					clearTimeout(districtSearchTimeout);
+					districtSearchTimeout = setTimeout(() => {
+						filterSelectOptions(this, e.target.value);
+					}, 100);
+				}
+			});
+			
+			// From stand dropdown
+			const fromSelect = document.getElementById('from');
+			let fromSearchTimeout;
+			
+			fromSelect.addEventListener('keydown', function(e) {
+				if (e.key.length === 1 || e.key === 'Backspace') {
+					clearTimeout(fromSearchTimeout);
+					fromSearchTimeout = setTimeout(() => {
+						filterSelectOptions(this, e.target.value);
+					}, 100);
+				}
+			});
+			
+			// To stand dropdown
+			const toSelect = document.getElementById('to');
+			let toSearchTimeout;
+			
+			toSelect.addEventListener('keydown', function(e) {
+				if (e.key.length === 1 || e.key === 'Backspace') {
+					clearTimeout(toSearchTimeout);
+					toSearchTimeout = setTimeout(() => {
+						filterSelectOptions(this, e.target.value);
+					}, 100);
+				}
+			});
+		}
+
+		// Filter select options based on search term
+		function filterSelectOptions(selectElement, searchTerm) {
+			const options = Array.from(selectElement.options);
+			const searchLower = searchTerm.toLowerCase();
+			
+			options.forEach(option => {
+				if (option.value === '') {
+					option.style.display = 'block'; // Always show the first empty option
+				} else if (option.text.toLowerCase().includes(searchLower)) {
+					option.style.display = 'block';
+				} else {
+					option.style.display = 'none';
+				}
+			});
+		}
+
+		// Set minimum date to today
+		function setMinDate() {
+			const dateInput = document.getElementById('date');
+			const today = new Date().toISOString().split('T')[0];
+			dateInput.setAttribute('min', today);
+		}
+
+		// Initialize page
+		document.addEventListener('DOMContentLoaded', () => {
+			populateDistricts();
+			setMinDate();
+			initializeSearchableDropdowns();
+		});
+
+		document.getElementById('bookingForm').addEventListener('submit', (e) => {
+			e.preventDefault();
+			const district = document.getElementById('district').value.trim();
+			const from = document.getElementById('from').value.trim();
+			const to = document.getElementById('to').value.trim();
+			const date = document.getElementById('date').value;
+			const count = parseInt(document.getElementById('count').value, 10);
+			
+			if (!district) {
+				alert('Please select a district');
+				return;
+			}
+			
+			if (from === to) {
+				alert('Departure and destination cannot be the same');
+				return;
+			}
+			
+			localStorage.setItem('pendingBooking', JSON.stringify({ district, from, to, date, count }));
+			const qs = new URLSearchParams({ district, from, to, date }).toString();
+			window.location.href = `availability.html?${qs}`;
+		});
+	</script>
+</body>
+</html>

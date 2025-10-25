@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Payment History • Bus Reservation</title>
+	<style>
+		:root{
+			--bg:#0f172a;
+			--muted:#94a3b8;
+			--text:#e5e7eb;
+			--primary:#22c55e;
+			--primary-600:#16a34a;
+			--input:#1f2937;
+			--card:#111827;
+			--danger:#ef4444;
+			--warning:#f59e0b;
+			--success:#10b981;
+			--info:#3b82f6;
+		}
+		html,body{height:100%}
+		body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica Neue,Arial;color:var(--text);background:linear-gradient(0deg,#0b1220,var(--bg));}
+		.layout{display:flex;min-height:100vh}
+		.sidebar{width:240px;background:#0c1324;border-right:1px solid rgba(148,163,184,.15);padding:16px;position:sticky;top:0;height:100vh}
+		.brand{font-weight:800;margin:0 0 14px}
+		.menu{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+		.menu a{display:block;color:#e5e7eb;text-decoration:none;padding:10px 12px;border-radius:10px}
+		.menu a:hover{background:rgba(148,163,184,.12)}
+		.menu a.active{background:rgba(34,197,94,.15);color:var(--primary)}
+		.content{flex:1;padding:24px;overflow-y:auto}
+		.topbar{position:sticky;top:0;z-index:5;background:rgba(12,19,36,.85);backdrop-filter:blur(8px);border-bottom:1px solid rgba(148,163,184,.15);display:flex;justify-content:flex-end;align-items:center;padding:10px 16px;margin:-24px -24px 24px -24px}
+		.button{appearance:none;border:0;padding:10px 12px;border-radius:10px;background:linear-gradient(180deg,var(--primary),var(--primary-600));color:#fff;font-weight:600;cursor:pointer}
+		.button.small{padding:6px 10px;font-size:12px}
+		.button.info{background:linear-gradient(180deg,var(--info),#2563eb)}
+		.button.danger{background:linear-gradient(180deg,var(--danger),#dc2626)}
+		.h1{font-size:22px;margin:0 0 24px}
+		.card{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01));border:1px solid rgba(148,163,184,.15);border-radius:14px;padding:20px;margin-bottom:16px}
+		.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+		.stat-card{background:rgba(255,255,255,.02);border:1px solid rgba(148,163,184,.1);border-radius:10px;padding:16px;text-align:center}
+		.stat-number{font-size:24px;font-weight:700;color:var(--primary);margin-bottom:4px}
+		.stat-label{font-size:14px;color:var(--muted)}
+		.tabs{display:flex;gap:8px;margin-bottom:20px;border-bottom:2px solid rgba(148,163,184,.15)}
+		.tab{padding:12px 20px;cursor:pointer;border:none;background:transparent;color:var(--muted);font-weight:600;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.2s}
+		.tab:hover{color:var(--text)}
+		.tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+		.table{width:100%;border-collapse:collapse;margin-top:16px}
+		.table th,.table td{padding:12px;text-align:left;border-bottom:1px solid rgba(148,163,184,.15)}
+		.table th{background:rgba(148,163,184,.05);font-weight:600;color:var(--muted);font-size:12px;text-transform:uppercase}
+		.table tr:hover{background:rgba(148,163,184,.05)}
+		.status-badge{padding:4px 8px;border-radius:4px;font-size:11px;font-weight:600;text-transform:uppercase}
+		.status-paid{background:rgba(16,185,129,.2);color:#10b981}
+		.status-refund-requested{background:rgba(251,191,36,.2);color:#fbbf24}
+		.status-refund-accepted{background:rgba(59,130,246,.2);color:#60a5fa}
+		.loading{text-align:center;padding:40px;color:var(--muted)}
+		.message{padding:12px;border-radius:8px;margin-bottom:16px}
+		.message.error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#fca5a5}
+		.message.success{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:#86efac}
+		.filter-bar{display:flex;gap:12px;margin-bottom:16px;align-items:center;flex-wrap:wrap}
+		.input{padding:8px 10px;border-radius:6px;border:1px solid rgba(148,163,184,.25);background:var(--input);color:var(--text);outline:none}
+		.input:focus{box-shadow:0 0 0 2px rgba(34,197,94,.35);border-color:var(--primary)}
+		.hidden{display:none}
+		.back-link{color:var(--primary);text-decoration:none;display:inline-flex;align-items:center;gap:6px;margin-bottom:16px}
+		.back-link:hover{text-decoration:underline}
+		.report-section{display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+		.button.warning{background:linear-gradient(180deg,var(--warning),#d97706)}
+	</style>
+</head>
+<body>
+	<div class="topbar">
+		<button id="signout" class="button">Sign out</button>
+	</div>
+	<div class="layout">
+		<aside class="sidebar">
+			<h2 class="brand">Finance</h2>
+			<ul class="menu">
+				<li><a href="fare.html">Manage Fare</a></li>
+				<li><a href="refundmanagement.html">Refund Management</a></li>
+				<li><a href="viewpaymenthistory.html" class="active">View Payment History</a></li>
+			</ul>
+		</aside>
+		<main class="content">
+			<a href="financedashboard.html" class="back-link">← Back to Finance Dashboard</a>
+			
+			<h1 class="h1">Payment History</h1>
+			
+			<div id="messageContainer"></div>
+			
+			<!-- Stats Cards -->
+			<div class="stats">
+				<div class="stat-card">
+					<div class="stat-number" id="totalPayments">0</div>
+					<div class="stat-label">Total Payments</div>
+				</div>
+				<div class="stat-card">
+					<div class="stat-number" id="paidCount">0</div>
+					<div class="stat-label">Paid</div>
+				</div>
+				<div class="stat-card">
+					<div class="stat-number" id="refundRequestedCount">0</div>
+					<div class="stat-label">Refund Requested</div>
+				</div>
+				<div class="stat-card">
+					<div class="stat-number" id="refundAcceptedCount">0</div>
+					<div class="stat-label">Refunded</div>
+				</div>
+				<div class="stat-card">
+					<div class="stat-number" id="totalRevenue">Rs. 0</div>
+					<div class="stat-label">Total Revenue</div>
+				</div>
+			</div>
+			
+			<div class="card">
+				<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+					<h3 style="margin:0">Payment Records</h3>
+					<button id="refreshBtn" class="button small">Refresh</button>
+				</div>
+				
+				<!-- Report Generation -->
+				<div class="report-section">
+					<span style="color:var(--muted);font-weight:600">Generate Report:</span>
+					<button id="dailyReportBtn" class="button small warning">📊 Daily Report (PDF)</button>
+					<button id="monthlyReportBtn" class="button small warning">📈 Monthly Report (PDF)</button>
+				</div>
+				
+				<!-- Tabs -->
+				<div class="tabs">
+					<button class="tab active" data-tab="all">All Payments</button>
+					<button class="tab" data-tab="paid">Paid Only</button>
+					<button class="tab" data-tab="refunds">Refunds Only</button>
+				</div>
+				
+				<!-- Filter -->
+				<div class="filter-bar">
+					<input type="text" id="searchBox" class="input" placeholder="Search by booking ID, passenger name, or payment method..." style="flex:1;max-width:400px">
+					<button id="clearSearch" class="button small info">Clear</button>
+				</div>
+				
+				<div id="loadingIndicator" class="loading">Loading payments...</div>
+				
+				<div id="paymentsTableContainer" class="hidden">
+					<table class="table" id="paymentsTable">
+						<thead>
+							<tr>
+								<th>Payment ID</th>
+								<th>Booking ID</th>
+								<th>Passenger</th>
+								<th>Email</th>
+								<th>Route</th>
+								<th>Payment Date</th>
+								<th>Method</th>
+								<th>Amount</th>
+								<th>Status</th>
+							</tr>
+						</thead>
+						<tbody id="paymentsTableBody">
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</main>
+	</div>
+
+	<!-- jsPDF Library -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+	<script>
+		let payments = [];
+		let filteredPayments = [];
+		let currentTab = 'all';
+		
+		document.addEventListener('DOMContentLoaded', () => {
+			loadPayments();
+			setupEventListeners();
+		});
+		
+		function setupEventListeners() {
+			document.getElementById('signout').addEventListener('click', () => {
+				localStorage.removeItem('currentUser');
+				window.location.href = 'login.html';
+			});
+			
+			document.getElementById('refreshBtn').addEventListener('click', loadPayments);
+			
+			// Tab switching
+			document.querySelectorAll('.tab').forEach(tab => {
+				tab.addEventListener('click', (e) => {
+					document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+					e.target.classList.add('active');
+					currentTab = e.target.dataset.tab;
+					filterPayments();
+				});
+			});
+			
+			// Search functionality
+			document.getElementById('searchBox').addEventListener('input', filterPayments);
+			document.getElementById('clearSearch').addEventListener('click', () => {
+				document.getElementById('searchBox').value = '';
+				filterPayments();
+			});
+			
+			// Report generation
+			document.getElementById('dailyReportBtn').addEventListener('click', () => generateReport('daily'));
+			document.getElementById('monthlyReportBtn').addEventListener('click', () => generateReport('monthly'));
+		}
+		
+		async function loadPayments() {
+			try {
+				document.getElementById('loadingIndicator').classList.remove('hidden');
+				document.getElementById('paymentsTableContainer').classList.add('hidden');
+				
+				const response = await fetch('/api/payments');
+				if (!response.ok) throw new Error('Failed to load payments');
+				
+				payments = await response.json();
+				updateStats();
+				filterPayments();
+				
+				document.getElementById('loadingIndicator').classList.add('hidden');
+				document.getElementById('paymentsTableContainer').classList.remove('hidden');
+			} catch (error) {
+				console.error('Error loading payments:', error);
+				showMessage('Error loading payments: ' + error.message, 'error');
+				document.getElementById('loadingIndicator').classList.add('hidden');
+			}
+		}
+		
+		function updateStats() {
+			const paidPayments = payments.filter(p => p.paymentStatus?.toLowerCase() === 'paid');
+			const refundRequested = payments.filter(p => p.paymentStatus?.toLowerCase() === 'refund requested');
+			const refundAccepted = payments.filter(p => p.paymentStatus?.toLowerCase() === 'refund accepted');
+			
+			const totalRevenue = paidPayments.reduce((sum, p) => sum + (parseFloat(p.totalPrice) || 0), 0);
+			
+			document.getElementById('totalPayments').textContent = payments.length;
+			document.getElementById('paidCount').textContent = paidPayments.length;
+			document.getElementById('refundRequestedCount').textContent = refundRequested.length;
+			document.getElementById('refundAcceptedCount').textContent = refundAccepted.length;
+			document.getElementById('totalRevenue').textContent = `Rs. ${totalRevenue.toFixed(2)}`;
+		}
+		
+		function filterPayments() {
+			let filtered = [...payments];
+			
+			// Filter by tab
+			if (currentTab === 'paid') {
+				filtered = filtered.filter(p => p.paymentStatus?.toLowerCase() === 'paid');
+			} else if (currentTab === 'refunds') {
+				filtered = filtered.filter(p => 
+					p.paymentStatus?.toLowerCase() === 'refund requested' || 
+					p.paymentStatus?.toLowerCase() === 'refund accepted'
+				);
+			}
+			
+			// Filter by search
+			const searchTerm = document.getElementById('searchBox').value.toLowerCase().trim();
+			if (searchTerm) {
+				filtered = filtered.filter(payment => {
+					const bookingId = payment.booking?.bookingId?.toString() || '';
+					const passengerName = `${payment.booking?.firstName || ''} ${payment.booking?.lastName || ''}`.toLowerCase();
+					const email = payment.booking?.email?.toLowerCase() || '';
+					const paymentMethod = payment.paymentMethod?.toLowerCase() || '';
+					
+					return bookingId.includes(searchTerm) || 
+					       passengerName.includes(searchTerm) || 
+					       email.includes(searchTerm) ||
+					       paymentMethod.includes(searchTerm);
+				});
+			}
+			
+			filteredPayments = filtered;
+			displayPayments();
+		}
+		
+		function displayPayments() {
+			const tbody = document.getElementById('paymentsTableBody');
+			tbody.innerHTML = '';
+			
+			if (filteredPayments.length === 0) {
+				tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:40px">No payments found</td></tr>';
+				return;
+			}
+			
+			filteredPayments.forEach(payment => {
+				const booking = payment.booking || {};
+				const schedule = booking.schedule || {};
+				const route = schedule.route || {};
+				
+				const row = document.createElement('tr');
+				const statusClass = getStatusClass(payment.paymentStatus);
+				
+				row.innerHTML = `
+					<td>#${payment.paymentId}</td>
+					<td>#${booking.bookingId || 'N/A'}</td>
+					<td>${booking.firstName || ''} ${booking.lastName || ''}</td>
+					<td>${booking.email || 'N/A'}</td>
+					<td>${route.fromStand || 'N/A'} → ${route.toStand || 'N/A'}</td>
+					<td>${payment.paymentDate || 'N/A'}</td>
+					<td>${payment.paymentMethod || 'N/A'}</td>
+					<td>Rs. ${payment.totalPrice || '0.00'}</td>
+					<td><span class="status-badge ${statusClass}">${payment.paymentStatus || 'N/A'}</span></td>
+				`;
+				
+				tbody.appendChild(row);
+			});
+		}
+		
+		function getStatusClass(status) {
+			const statusLower = status?.toLowerCase() || '';
+			if (statusLower === 'paid') return 'status-paid';
+			if (statusLower === 'refund requested') return 'status-refund-requested';
+			if (statusLower === 'refund accepted') return 'status-refund-accepted';
+			return '';
+		}
+		
+		function showMessage(message, type) {
+			const container = document.getElementById('messageContainer');
+			const messageDiv = document.createElement('div');
+			messageDiv.className = `message ${type}`;
+			messageDiv.textContent = message;
+			
+			container.innerHTML = '';
+			container.appendChild(messageDiv);
+			
+			setTimeout(() => {
+				messageDiv.remove();
+			}, 5000);
+		}
+		
+		function generateReport(reportType) {
+			try {
+				const { jsPDF } = window.jspdf;
+				const doc = new jsPDF();
+				
+				// Get date range based on report type
+				const today = new Date();
+				let startDate, endDate, reportTitle;
+				
+				if (reportType === 'daily') {
+					startDate = new Date(today.setHours(0, 0, 0, 0));
+					endDate = new Date(today.setHours(23, 59, 59, 999));
+					reportTitle = `Daily Payment Report - ${formatDate(new Date())}`;
+				} else {
+					// Monthly report
+					startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+					endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+					reportTitle = `Monthly Payment Report - ${getMonthName(today.getMonth())} ${today.getFullYear()}`;
+				}
+				
+				// Filter payments by date range
+				const reportPayments = payments.filter(payment => {
+					if (!payment.paymentDate) return false;
+					const paymentDate = new Date(payment.paymentDate);
+					return paymentDate >= startDate && paymentDate <= endDate;
+				});
+				
+				if (reportPayments.length === 0) {
+					showMessage(`No payments found for ${reportType} report period`, 'error');
+					return;
+				}
+				
+				// Calculate statistics
+				const paidPayments = reportPayments.filter(p => p.paymentStatus?.toLowerCase() === 'paid');
+				const refundRequested = reportPayments.filter(p => p.paymentStatus?.toLowerCase() === 'refund requested');
+				const refundAccepted = reportPayments.filter(p => p.paymentStatus?.toLowerCase() === 'refund accepted');
+				const totalRevenue = paidPayments.reduce((sum, p) => sum + (parseFloat(p.totalPrice) || 0), 0);
+				const totalRefunds = refundAccepted.reduce((sum, p) => sum + (parseFloat(p.totalPrice) || 0), 0);
+				
+				// Header
+				doc.setFillColor(34, 197, 94);
+				doc.rect(0, 0, 210, 35, 'F');
+				
+				doc.setTextColor(255, 255, 255);
+				doc.setFontSize(22);
+				doc.text('Bus Reservation System', 105, 15, { align: 'center' });
+				
+				doc.setFontSize(16);
+				doc.text(reportTitle, 105, 25, { align: 'center' });
+				
+				// Report Details
+				doc.setTextColor(0, 0, 0);
+				doc.setFontSize(10);
+				doc.text(`Generated: ${formatDateTime(new Date())}`, 14, 45);
+				doc.text(`Period: ${formatDate(startDate)} to ${formatDate(endDate)}`, 14, 50);
+				
+				// Summary Statistics
+				doc.setFontSize(14);
+				doc.setTextColor(34, 197, 94);
+				doc.text('Summary Statistics', 14, 60);
+				
+				doc.setFontSize(10);
+				doc.setTextColor(0, 0, 0);
+				const statsY = 68;
+				doc.text(`Total Payments: ${reportPayments.length}`, 14, statsY);
+				doc.text(`Paid: ${paidPayments.length}`, 14, statsY + 6);
+				doc.text(`Refund Requested: ${refundRequested.length}`, 14, statsY + 12);
+				doc.text(`Refunded: ${refundAccepted.length}`, 14, statsY + 18);
+				doc.text(`Total Revenue: Rs. ${totalRevenue.toFixed(2)}`, 14, statsY + 24);
+				doc.text(`Total Refunds: Rs. ${totalRefunds.toFixed(2)}`, 14, statsY + 30);
+				doc.text(`Net Revenue: Rs. ${(totalRevenue - totalRefunds).toFixed(2)}`, 14, statsY + 36);
+				
+				// Payment Details Table
+				doc.setFontSize(14);
+				doc.setTextColor(34, 197, 94);
+				doc.text('Payment Details', 14, 115);
+				
+				// Prepare table data
+				const tableData = reportPayments.map(payment => {
+					const booking = payment.booking || {};
+					const schedule = booking.schedule || {};
+					const route = schedule.route || {};
+					
+					return [
+						`#${payment.paymentId}`,
+						`#${booking.bookingId || 'N/A'}`,
+						`${booking.firstName || ''} ${booking.lastName || ''}`,
+						`${route.fromStand || 'N/A'} → ${route.toStand || 'N/A'}`,
+						payment.paymentDate || 'N/A',
+						payment.paymentMethod || 'N/A',
+						`Rs. ${payment.totalPrice || '0.00'}`,
+						payment.paymentStatus || 'N/A'
+					];
+				});
+				
+				// Create table using autoTable
+				doc.autoTable({
+					head: [['Payment ID', 'Booking ID', 'Passenger', 'Route', 'Date', 'Method', 'Amount', 'Status']],
+					body: tableData,
+					startY: 120,
+					theme: 'grid',
+					headStyles: {
+						fillColor: [34, 197, 94],
+						textColor: [255, 255, 255],
+						fontStyle: 'bold',
+						fontSize: 9
+					},
+					styles: {
+						fontSize: 8,
+						cellPadding: 3
+					},
+					columnStyles: {
+						0: { cellWidth: 20 },
+						1: { cellWidth: 20 },
+						2: { cellWidth: 30 },
+						3: { cellWidth: 35 },
+						4: { cellWidth: 22 },
+						5: { cellWidth: 20 },
+						6: { cellWidth: 22 },
+						7: { cellWidth: 25 }
+					}
+				});
+				
+				// Footer
+				const pageCount = doc.internal.getNumberOfPages();
+				for (let i = 1; i <= pageCount; i++) {
+					doc.setPage(i);
+					doc.setFontSize(8);
+					doc.setTextColor(128, 128, 128);
+					doc.text(
+						`Page ${i} of ${pageCount}`,
+						doc.internal.pageSize.width / 2,
+						doc.internal.pageSize.height - 10,
+						{ align: 'center' }
+					);
+					doc.text(
+						'© Bus Reservation System - Finance Department',
+						14,
+						doc.internal.pageSize.height - 10
+					);
+				}
+				
+				// Save PDF
+				const fileName = `Payment_Report_${reportType}_${formatDate(new Date()).replace(/\//g, '-')}.pdf`;
+				doc.save(fileName);
+				
+				showMessage(`${reportType.charAt(0).toUpperCase() + reportType.slice(1)} report generated successfully!`, 'success');
+				
+			} catch (error) {
+				console.error('Error generating report:', error);
+				showMessage('Error generating report: ' + error.message, 'error');
+			}
+		}
+		
+		function formatDate(date) {
+			const year = date.getFullYear();
+			const month = String(date.getMonth() + 1).padStart(2, '0');
+			const day = String(date.getDate()).padStart(2, '0');
+			return `${year}-${month}-${day}`;
+		}
+		
+		function formatDateTime(date) {
+			const dateStr = formatDate(date);
+			const hours = String(date.getHours()).padStart(2, '0');
+			const minutes = String(date.getMinutes()).padStart(2, '0');
+			const seconds = String(date.getSeconds()).padStart(2, '0');
+			return `${dateStr} ${hours}:${minutes}:${seconds}`;
+		}
+		
+		function getMonthName(monthIndex) {
+			const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+							'July', 'August', 'September', 'October', 'November', 'December'];
+			return months[monthIndex];
+		}
+	</script>
+</body>
+</html>
+

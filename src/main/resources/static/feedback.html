@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Feedback • Bus Reservation</title>
+	<style>
+		:root { 
+			--bg:#0f172a; 
+			--muted:#94a3b8; 
+			--text:#e5e7eb; 
+			--primary:#22c55e; 
+			--primary-600:#16a34a; 
+			--input:#1f2937; 
+			--ring:rgba(34,197,94,.35);
+			--card:#111827;
+			--danger:#ef4444;
+			--success:#10b981;
+		}
+		html,body{height:100%}
+		body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica Neue,Arial;color:var(--text);background:linear-gradient(0deg,#0b1220,var(--bg));}
+		.nav{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(17,24,39,.8);backdrop-filter:blur(8px);border-bottom:1px solid rgba(148,163,184,.15);position:sticky;top:0;z-index:10}
+		.nav-left,.nav-right{display:flex;gap:12px;align-items:center}
+		.nav a, .nav button{color:var(--text);text-decoration:none;font-weight:600;background:transparent;border:0;cursor:pointer;padding:8px 10px;border-radius:8px}
+		.nav a:hover, .nav button:hover{background:rgba(148,163,184,.12)}
+		.brand{font-weight:800;letter-spacing:.2px}
+		.container{max-width:600px;margin:24px auto;padding:0 16px}
+		.card{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01));border:1px solid rgba(148,163,184,.15);border-radius:14px;padding:20px;margin-bottom:16px}
+		.h1{font-size:22px;margin:0 0 6px}
+		.p{color:var(--muted);margin:0 0 16px}
+		.form{display:grid;gap:14px}
+		.form-field{display:flex;flex-direction:column}
+		.label{font-size:13px;color:var(--muted);margin-bottom:6px;display:block}
+		.input{width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(148,163,184,.25);background:var(--input);color:var(--text);outline:none;box-sizing:border-box}
+		.input:focus{box-shadow:0 0 0 4px var(--ring);border-color:var(--primary)}
+		.select{width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(148,163,184,.25);background:var(--input);color:var(--text);outline:none;cursor:pointer;box-sizing:border-box}
+		.select:focus{box-shadow:0 0 0 4px var(--ring);border-color:var(--primary)}
+		.textarea{width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(148,163,184,.25);background:var(--input);color:var(--text);outline:none;resize:vertical;min-height:120px;font-family:inherit;box-sizing:border-box}
+		.textarea:focus{box-shadow:0 0 0 4px var(--ring);border-color:var(--primary)}
+		.button{appearance:none;border:0;padding:12px 16px;border-radius:10px;background:linear-gradient(180deg,var(--primary),var(--primary-600));color:#fff;font-weight:600;cursor:pointer;transition:all 0.2s}
+		.button:hover{filter:brightness(1.05)}
+		.button:disabled{background:#6b7280;cursor:not-allowed}
+		.button.secondary{background:rgba(148,163,184,.2);color:var(--text)}
+		.button.secondary:hover{background:rgba(148,163,184,.3)}
+		.link{color:var(--primary);text-decoration:none}
+		.link:hover{text-decoration:underline}
+		.hidden{display:none}
+		.message{padding:12px;border-radius:8px;margin-bottom:16px;font-size:14px}
+		.message.success{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:#10b981}
+		.message.error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#ef4444}
+		.loading{text-align:center;padding:20px;color:var(--muted)}
+		.feedback-icon{font-size:48px;text-align:center;margin-bottom:16px}
+	</style>
+</head>
+<body>
+	<nav class="nav">
+		<div class="nav-left">
+			<span class="brand">Bus Ticket Reservation System</span>
+		</div>
+		<div class="nav-right">
+			<a href="index.html">Home</a>
+			<a href="booking.html">Book Now</a>
+			<a href="profile.html" id="navProfile" class="hidden">Profile</a>
+			<button id="navSignout" class="hidden">Sign out</button>
+		</div>
+	</nav>
+
+	<div class="container">
+		<div id="messageContainer"></div>
+
+		<div class="card">
+			<div class="feedback-icon">💬</div>
+			<h1 class="h1">Feedback & Support</h1>
+			<p class="p">We value your feedback! Please share your thoughts, suggestions, or report any issues you've encountered.</p>
+			
+			<form id="feedbackForm" class="form">
+				<div class="form-field">
+					<label class="label" for="name">Name *</label>
+					<input id="name" class="input" type="text" required placeholder="Enter your full name" />
+				</div>
+				
+				<div class="form-field">
+					<label class="label" for="type">Type *</label>
+					<select id="type" class="select" required>
+						<option value="">Select feedback type</option>
+						<option value="feedback">Feedback</option>
+						<option value="complain">Complaint</option>
+					</select>
+				</div>
+				
+				<div class="form-field">
+					<label class="label" for="description">Description *</label>
+					<textarea id="description" class="textarea" required placeholder="Please describe your feedback or complaint in detail..."></textarea>
+				</div>
+				
+				<div style="display:flex;gap:12px;margin-top:4px">
+					<button type="submit" class="button">Submit Feedback</button>
+					<button type="button" id="cancelBtn" class="button secondary">Cancel</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<script>
+		const API = 'http://localhost:8080/api/feedback';
+		let currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+		
+		// Initialize page
+		document.addEventListener('DOMContentLoaded', () => {
+			syncAuthUI();
+			setupEventListeners();
+			
+			// Pre-fill name if user is logged in
+			if (currentUser) {
+				const fullName = `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim();
+				if (fullName) {
+					document.getElementById('name').value = fullName;
+				}
+			}
+		});
+
+		function syncAuthUI() {
+			const loggedIn = !!currentUser;
+			document.getElementById('navProfile').classList.toggle('hidden', !loggedIn);
+			document.getElementById('navSignout').classList.toggle('hidden', !loggedIn);
+		}
+
+		function setupEventListeners() {
+			// Form submission
+			document.getElementById('feedbackForm').addEventListener('submit', async (e) => {
+				e.preventDefault();
+				await submitFeedback();
+			});
+
+			// Cancel button
+			document.getElementById('cancelBtn').addEventListener('click', () => {
+				window.location.href = 'index.html';
+			});
+
+			// Sign out
+			document.getElementById('navSignout').addEventListener('click', () => {
+				localStorage.removeItem('currentUser');
+				window.location.href = 'index.html';
+			});
+		}
+
+		async function submitFeedback() {
+			try {
+				const formData = {
+					name: document.getElementById('name').value.trim(),
+					type: document.getElementById('type').value,
+					description: document.getElementById('description').value.trim(),
+					userId: currentUser ? currentUser.id : null
+				};
+
+				// Validate required fields
+				if (!formData.name || !formData.type || !formData.description) {
+					showMessage('Please fill in all required fields.', 'error');
+					return;
+				}
+
+				const response = await fetch(API, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(formData)
+				});
+
+				if (response.ok) {
+					showMessage('Thank you for your feedback! We will review it and get back to you if needed.', 'success');
+					// Reset form
+					document.getElementById('feedbackForm').reset();
+					// Pre-fill name again if user is logged in
+					if (currentUser) {
+						const fullName = `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim();
+						if (fullName) {
+							document.getElementById('name').value = fullName;
+						}
+					}
+				} else {
+					const error = await response.text();
+					showMessage('Failed to submit feedback. Please try again.', 'error');
+					console.error('Error:', error);
+				}
+			} catch (error) {
+				console.error('Error submitting feedback:', error);
+				showMessage('Error submitting feedback. Please try again.', 'error');
+			}
+		}
+
+		function showMessage(message, type) {
+			const container = document.getElementById('messageContainer');
+			const messageDiv = document.createElement('div');
+			messageDiv.className = `message ${type}`;
+			messageDiv.textContent = message;
+			
+			container.innerHTML = '';
+			container.appendChild(messageDiv);
+			
+			setTimeout(() => {
+				messageDiv.remove();
+			}, 5000);
+		}
+	</script>
+</body>
+</html>

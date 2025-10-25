@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Admin • Users</title>
+	<style>
+		:root { --bg:#0f172a; --card:#111827; --muted:#94a3b8; --text:#e5e7eb; --primary:#22c55e; --primary-600:#16a34a; --input:#1f2937; --ring:rgba(34,197,94,.35); }
+		html,body{height:100%}
+		body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica Neue,Arial;color:var(--text);background:linear-gradient(0deg,#0b1220,var(--bg));}
+		.container{max-width:1100px;margin:32px auto;padding:0 16px;}
+		.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+		.h1{font-size:22px;margin:0}
+		.toolbar{display:flex;gap:8px}
+		.input{padding:10px 12px;border-radius:10px;border:1px solid rgba(148,163,184,.25);background:var(--input);color:var(--text);outline:none}
+		.table{width:100%;border-collapse:separate;border-spacing:0 8px}
+		.tr{background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01));backdrop-filter:blur(8px);border:1px solid rgba(148,163,184,.15)}
+		.tr td,.tr th{padding:12px 10px}
+		.tr th{color:var(--muted);font-weight:600;text-align:left}
+		.actions{display:flex;gap:8px}
+		.button{appearance:none;border:0;padding:10px 12px;border-radius:10px;background:linear-gradient(180deg,var(--primary),var(--primary-600));color:#fff;font-weight:600;cursor:pointer}
+		.button.secondary{background:#334155}
+		.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#334155;color:#e5e7eb;font-size:12px}
+		.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center}
+		.modal .card{width:100%;max-width:520px;background:#ffffff;border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:20px;color:#0f172a}
+		.grid{display:grid;gap:12px}
+		.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+		.label{font-size:13px;color:var(--muted)}
+		.error{color:#ef4444;font-size:12px;margin-top:4px;display:block}
+		.input.error{border-color:#ef4444;box-shadow:0 0 0 4px rgba(239,68,68,.2)}
+		.input.success{border-color:#10b981;box-shadow:0 0 0 4px rgba(16,185,129,.2)}
+		.validation-summary{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:12px;margin-bottom:16px;display:none}
+		.validation-summary.show{display:block}
+		.validation-summary ul{margin:0;padding-left:20px}
+		.validation-summary li{color:#ef4444;font-size:14px;margin-bottom:4px}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="header">
+			<h1 class="h1">User Management</h1>
+			<div class="toolbar">
+				<button class="button" id="addUser">Add User</button>
+				<input id="search" class="input" placeholder="Search by name or email" autocomplete="off" value="" />
+				<button class="button secondary" id="refresh">Refresh</button>
+			</div>
+		</div>
+
+		<table class="table">
+			<thead class="tr">
+				<tr>
+					<th>ID</th>
+					<th>Name</th>
+					<th>Email</th>
+					<th>Phone</th>
+					<th>NIC</th>
+					<th>Role</th>
+					<th></th>
+				</tr>
+			</thead>
+			<tbody id="tbody"></tbody>
+		</table>
+	</div>
+
+	<div id="modal" class="modal">
+		<div class="card">
+			<h3 id="modalTitle" style="margin-top:0">Edit User</h3>
+			<div id="adminValidationSummary" class="validation-summary">
+				<strong>Please fix the following errors:</strong>
+				<ul id="adminValidationErrors"></ul>
+			</div>
+			<div class="grid">
+				<div class="row">
+					<div>
+						<div class="label">First name</div>
+						<input id="fn" class="input" />
+						<span id="fnError" class="error"></span>
+					</div>
+					<div>
+						<div class="label">Last name</div>
+						<input id="ln" class="input" />
+						<span id="lnError" class="error"></span>
+					</div>
+				</div>
+				<div class="row">
+					<div>
+						<div class="label">Email</div>
+						<input id="em" class="input" type="email" placeholder="user@example.com" />
+						<span id="emError" class="error"></span>
+					</div>
+					<div>
+						<div class="label">Phone</div>
+						<input id="ph" class="input" type="tel" placeholder="1234567890" />
+						<span id="phError" class="error"></span>
+					</div>
+				</div>
+				<div class="row">
+					<div>
+						<div class="label">NIC Number</div>
+						<input id="nic" class="input" placeholder="123456789012 or 1234567890V" />
+						<span id="nicError" class="error"></span>
+					</div>
+					<div>
+						<!-- Empty div for layout balance -->
+					</div>
+				</div>
+				<div class="row">
+					<div>
+						<div class="label">Role</div>
+						<select id="role" class="input">
+							<option value="Passenger">Passenger</option>
+							<option value="IT Support">IT Support</option>
+							<option value="Customer Service">Customer Service</option>
+							<option value="Operation User">Operation User</option>
+							<option value="Finance User">Finance User</option>
+							<option value="Ticket Officer">Ticket Officer</option>
+						</select>
+					</div>
+					<div>
+						<div class="label">Password</div>
+						<input id="pw" class="input" type="password" placeholder="Leave blank to keep (edit only)" />
+						<span id="pwError" class="error"></span>
+					</div>
+				</div>
+			</div>
+			<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+				<button class="button secondary" id="cancel">Cancel</button>
+				<button class="button" id="save">Save</button>
+			</div>
+		</div>
+	</div>
+
+	<div id="deleteModal" class="modal">
+		<div class="card">
+			<h3 style="margin-top:0">Delete User</h3>
+			<div id="deleteDetails" style="margin:8px 0 12px;color:#334155">
+				<!-- filled dynamically: name, email, role, phone -->
+			</div>
+			<div id="deleteMessage" style="margin:8px 0 12px; display:none; color:#b91c1c; font-weight:600">Are you sure you want to delete?</div>
+			<div id="deleteActions" style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+				<button class="button secondary" id="deleteCancel">Cancel</button>
+				<button class="button" id="deletePrompt">Delete</button>
+			</div>
+			<div id="confirmActions" style="display:none;gap:8px;justify-content:flex-end;margin-top:16px">
+				<button class="button secondary" id="deleteNo">No</button>
+				<button class="button" id="deleteYes">Yes</button>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		const API = 'http://localhost:8080/api/users';
+		const tbody = document.getElementById('tbody');
+		const modal = document.getElementById('modal');
+		let current = null;
+
+		// Initialize validation on page load
+		document.addEventListener('DOMContentLoaded', () => {
+			setupAdminValidation();
+		});
+
+		document.getElementById('refresh').addEventListener('click', () => {
+			clearSearch(); // Clear search on refresh
+			load();
+		});
+		document.getElementById('addUser').addEventListener('click', openAdd);
+		document.getElementById('cancel').addEventListener('click', () => {
+			modal.style.display = 'none';
+			clearAdminValidationErrors();
+		});
+		document.getElementById('save').addEventListener('click', save);
+		document.getElementById('search').addEventListener('input', filter);
+
+		// Clear search field on page load
+		clearSearch();
+		load();
+
+		// Clear search field when window gains focus (prevents autofill when returning to page)
+		window.addEventListener('focus', () => {
+			const searchInput = document.getElementById('search');
+			if (searchInput.value && !searchInput.matches(':focus')) {
+				// Only clear if it's not currently being typed in
+				clearSearch();
+			}
+		});
+
+		// Validation functions
+		function validateFirstName(firstName) {
+			const trimmed = firstName.trim();
+			if (!trimmed) {
+				return 'First name is required';
+			}
+			if (trimmed.length < 2) {
+				return 'First name must be at least 2 characters long';
+			}
+			if (trimmed.length > 50) {
+				return 'First name must be less than 50 characters';
+			}
+			if (!/^[a-zA-Z\s'-]+$/.test(trimmed)) {
+				return 'First name can only contain letters, spaces, hyphens, and apostrophes';
+			}
+			return null;
+		}
+
+		function validateLastName(lastName) {
+			const trimmed = lastName.trim();
+			if (!trimmed) {
+				return 'Last name is required';
+			}
+			if (trimmed.length < 2) {
+				return 'Last name must be at least 2 characters long';
+			}
+			if (trimmed.length > 50) {
+				return 'Last name must be less than 50 characters';
+			}
+			if (!/^[a-zA-Z\s'-]+$/.test(trimmed)) {
+				return 'Last name can only contain letters, spaces, hyphens, and apostrophes';
+			}
+			return null;
+		}
+
+		function validateEmail(email) {
+			const trimmed = email.trim();
+			if (!trimmed) {
+				return 'Email is required';
+			}
+			const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+			if (!emailRegex.test(trimmed)) {
+				return 'Please enter a valid email address';
+			}
+			if (trimmed.length > 100) {
+				return 'Email must be less than 100 characters';
+			}
+			return null;
+		}
+
+		function validatePhone(phone) {
+			const trimmed = phone.trim();
+			if (!trimmed) {
+				return 'Phone number is required';
+			}
+			// Remove all non-digit characters for validation
+			const digitsOnly = trimmed.replace(/\D/g, '');
+			if (digitsOnly.length !== 10) {
+				return 'Phone number must be exactly 10 digits';
+			}
+			// Check for valid phone format (allows various formats but must be 10 digits)
+			const phoneRegex = /^[0-9\s\-\(\)]{10,15}$/;
+			if (!phoneRegex.test(trimmed)) {
+				return 'Please enter a valid phone number';
+			}
+			return null;
+		}
+
+		function validateNIC(nic) {
+			const trimmed = nic.trim();
+			if (!trimmed) {
+				return 'NIC number is required';
+			}
+			// Sri Lankan NIC validation (12 digits OR 10 digits with V at end)
+			const newNicRegex = /^[0-9]{12}$/;
+			const oldNicRegex = /^[0-9]{10}V$/i;
+			
+			if (!newNicRegex.test(trimmed) && !oldNicRegex.test(trimmed)) {
+				return 'Please enter a valid NIC number (12 digits or 10 digits with V)';
+			}
+			return null;
+		}
+
+		function validatePassword(password, isNewUser) {
+			if (isNewUser) {
+				if (!password) {
+					return 'Password is required for new users';
+				}
+			} else {
+				if (!password) {
+					return null; // Password is optional for existing users
+				}
+			}
+			
+			if (password.length < 8) {
+				return 'Password must be at least 8 characters long';
+			}
+			if (password.length > 100) {
+				return 'Password must be less than 100 characters';
+			}
+			// Check for at least one uppercase, one lowercase, and one number
+			const hasUpperCase = /[A-Z]/.test(password);
+			const hasLowerCase = /[a-z]/.test(password);
+			const hasNumbers = /\d/.test(password);
+			
+			if (!hasUpperCase || !hasLowerCase || !hasNumbers) {
+				return 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
+			}
+			return null;
+		}
+
+		function setupAdminValidation() {
+			const inputs = [
+				{ id: 'fn', validator: validateFirstName, errorId: 'fnError' },
+				{ id: 'ln', validator: validateLastName, errorId: 'lnError' },
+				{ id: 'em', validator: validateEmail, errorId: 'emError' },
+				{ id: 'ph', validator: validatePhone, errorId: 'phError' },
+				{ id: 'nic', validator: validateNIC, errorId: 'nicError' },
+				{ id: 'pw', validator: (value) => validatePassword(value, !current), errorId: 'pwError' }
+			];
+
+			inputs.forEach(({ id, validator, errorId }) => {
+				const input = document.getElementById(id);
+				const errorElement = document.getElementById(errorId);
+
+				// Real-time validation on input
+				input.addEventListener('input', () => {
+					validateField(input, validator, errorElement);
+				});
+
+				// Validation on blur
+				input.addEventListener('blur', () => {
+					validateField(input, validator, errorElement);
+				});
+			});
+
+			// Add input restrictions for phone
+			document.getElementById('ph').addEventListener('input', function(e) {
+				// Allow digits, spaces, hyphens, parentheses only (no plus sign for 10-digit format)
+				e.target.value = e.target.value.replace(/[^0-9\s\-\(\)]/g, '');
+			});
+
+			// Add input restrictions for NIC
+			document.getElementById('nic').addEventListener('input', function(e) {
+				let value = e.target.value.toUpperCase();
+				
+				// Remove any non-digit characters except V at the end
+				if (value.length <= 10) {
+					// Only digits for first 10 characters
+					value = value.replace(/[^0-9]/g, '');
+				} else if (value.length === 11) {
+					// Check if 11th character is V (old format) or digit (new format)
+					const first10 = value.substring(0, 10).replace(/[^0-9]/g, '');
+					const lastChar = value.charAt(10);
+					
+					if (lastChar === 'V') {
+						// Old format: 10 digits + V
+						value = first10 + 'V';
+					} else if (/[0-9]/.test(lastChar)) {
+						// New format: continuing with digits
+						value = first10 + lastChar;
+					} else {
+						// Invalid character, keep only digits
+						value = first10;
+					}
+				} else if (value.length === 12) {
+					// For 12th character, only allow digits (new format)
+					const first11 = value.substring(0, 11).replace(/[^0-9]/g, '');
+					const lastChar = value.charAt(11);
+					
+					if (/[0-9]/.test(lastChar)) {
+						value = first11 + lastChar;
+					} else {
+						value = first11;
+					}
+				} else {
+					// Limit to 12 characters max
+					value = value.substring(0, 12);
+				}
+				
+				e.target.value = value;
+			});
+		}
+
+		function validateField(input, validator, errorElement) {
+			const error = validator(input.value);
+			if (error) {
+				input.classList.add('error');
+				input.classList.remove('success');
+				errorElement.textContent = error;
+			} else {
+				input.classList.remove('error');
+				input.classList.add('success');
+				errorElement.textContent = '';
+			}
+		}
+
+		function validateAdminForm() {
+			const inputs = [
+				{ id: 'fn', validator: validateFirstName, errorId: 'fnError' },
+				{ id: 'ln', validator: validateLastName, errorId: 'lnError' },
+				{ id: 'em', validator: validateEmail, errorId: 'emError' },
+				{ id: 'ph', validator: validatePhone, errorId: 'phError' },
+				{ id: 'nic', validator: validateNIC, errorId: 'nicError' },
+				{ id: 'pw', validator: (value) => validatePassword(value, !current), errorId: 'pwError' }
+			];
+
+			const errors = [];
+			let isValid = true;
+
+			inputs.forEach(({ id, validator, errorId }) => {
+				const input = document.getElementById(id);
+				const errorElement = document.getElementById(errorId);
+				const error = validator(input.value);
+				
+				if (error) {
+					input.classList.add('error');
+					input.classList.remove('success');
+					errorElement.textContent = error;
+					errors.push(error);
+					isValid = false;
+				} else {
+					input.classList.remove('error');
+					input.classList.add('success');
+					errorElement.textContent = '';
+				}
+			});
+
+			// Show validation summary if there are errors
+			const validationSummary = document.getElementById('adminValidationSummary');
+			const validationErrors = document.getElementById('adminValidationErrors');
+			
+			if (!isValid) {
+				validationErrors.innerHTML = errors.map(error => `<li>${error}</li>`).join('');
+				validationSummary.classList.add('show');
+			} else {
+				validationSummary.classList.remove('show');
+			}
+
+			return isValid;
+		}
+
+		function clearAdminValidationErrors() {
+			const inputs = [
+				'fn', 'ln', 'em', 'ph', 'nic', 'pw'
+			];
+			const errorIds = [
+				'fnError', 'lnError', 'emError', 'phError', 'nicError', 'pwError'
+			];
+
+			inputs.forEach((inputId, index) => {
+				const input = document.getElementById(inputId);
+				const errorElement = document.getElementById(errorIds[index]);
+				
+				input.classList.remove('error', 'success');
+				errorElement.textContent = '';
+			});
+
+			// Hide validation summary
+			const validationSummary = document.getElementById('adminValidationSummary');
+			validationSummary.classList.remove('show');
+		}
+
+		function clearSearch() {
+			const searchInput = document.getElementById('search');
+			searchInput.value = '';
+			searchInput.setAttribute('autocomplete', 'off');
+			searchInput.setAttribute('autocorrect', 'off');
+			searchInput.setAttribute('autocapitalize', 'off');
+			searchInput.setAttribute('spellcheck', 'false');
+		}
+
+		async function load() {
+			try {
+				const res = await fetch(API);
+				if (!res.ok) {
+					console.error('Failed to load users:', res.status, res.statusText);
+					alert('Failed to load users. Please try again.');
+					return;
+				}
+				const users = await res.json();
+				console.log('Loaded users:', users); // Debug log
+				render(users);
+			} catch (error) {
+				console.error('Error loading users:', error);
+				alert('Error loading users. Please try again.');
+			}
+		}
+
+		function render(users) {
+			console.log('Rendering users:', users); // Debug log
+			tbody.innerHTML = '';
+			
+			if (!users || users.length === 0) {
+				console.log('No users to render');
+				return;
+			}
+			
+			for (const u of users) {
+				const tr = document.createElement('tr');
+				tr.className = 'tr';
+				tr.innerHTML = `
+					<td>${u.id}</td>
+					<td>${(u.firstName||'') + ' ' + (u.lastName||'')}</td>
+					<td>${u.email||''}</td>
+					<td>${u.phone||''}</td>
+					<td>${u.nic||''}</td>
+					<td><span class="badge">${u.role||'Passenger'}</span></td>
+					<td class="actions">
+						<button class="button secondary" data-action="edit" data-id="${u.id}">Edit</button>
+						<button class="button" data-action="delete" data-id="${u.id}">Delete</button>
+					</td>`;
+				const editBtn = tr.querySelector('button[data-action="edit"]');
+				const delBtn = tr.querySelector('button[data-action="delete"]');
+				editBtn.addEventListener('click', () => openEdit(u));
+				delBtn.addEventListener('click', () => openDelete(u));
+				tbody.appendChild(tr);
+			}
+			console.log('Rendered', users.length, 'users'); // Debug log
+		}
+
+		const deleteModal = document.getElementById('deleteModal');
+		const deleteDetails = document.getElementById('deleteDetails');
+		const deleteMessage = document.getElementById('deleteMessage');
+		const deleteActions = document.getElementById('deleteActions');
+		const confirmActions = document.getElementById('confirmActions');
+		let deleteTarget = null;
+
+		function openDelete(u){
+			console.log('Opening delete for user:', u); // Debug log
+			deleteTarget = u;
+			deleteDetails.innerHTML = `
+				<div><strong>Name:</strong> ${(u.firstName||'') + ' ' + (u.lastName||'')}</div>
+				<div><strong>Email:</strong> ${u.email||''}</div>
+				<div><strong>Phone:</strong> ${u.phone||''}</div>
+				<div><strong>NIC:</strong> ${u.nic||''}</div>
+				<div><strong>Role:</strong> ${u.role||''}</div>
+			`;
+			deleteMessage.style.display = 'none';
+			deleteActions.style.display = 'flex';
+			confirmActions.style.display = 'none';
+			deleteModal.style.display = 'flex';
+		}
+
+		document.getElementById('deleteCancel').addEventListener('click', ()=>{ deleteModal.style.display='none'; deleteTarget=null; });
+		document.getElementById('deletePrompt').addEventListener('click', ()=>{
+			deleteMessage.style.display = 'block';
+			deleteActions.style.display = 'none';
+			confirmActions.style.display = 'flex';
+		});
+		document.getElementById('deleteNo').addEventListener('click', ()=>{
+			deleteMessage.style.display = 'none';
+			deleteActions.style.display = 'flex';
+			confirmActions.style.display = 'none';
+		});
+		document.getElementById('deleteYes').addEventListener('click', async ()=>{
+			if(!deleteTarget) return;
+			try {
+				const res = await fetch(`${API}/${deleteTarget.id}`, { method: 'DELETE' });
+				if(res.ok){ 
+					deleteModal.style.display='none'; 
+					deleteTarget=null; 
+					await load(); // Wait for load to complete
+				} else { 
+					const error = await res.text();
+					alert('Delete failed: ' + error); 
+				}
+			} catch (error) {
+				console.error('Error deleting user:', error);
+				alert('Error deleting user. Please try again.');
+			}
+		});
+
+		function openEdit(u) {
+			console.log('Opening edit for user:', u); // Debug log
+			current = u;
+			document.getElementById('modalTitle').textContent = 'Edit User';
+			document.getElementById('fn').value = u.firstName||'';
+			document.getElementById('ln').value = u.lastName||'';
+			document.getElementById('em').value = u.email||'';
+			document.getElementById('ph').value = u.phone||'';
+			document.getElementById('nic').value = u.nic||'';
+			document.getElementById('role').value = u.role||'Passenger';
+			document.getElementById('pw').value = '';
+			clearAdminValidationErrors(); // Clear validation errors
+			modal.style.display = 'flex';
+		}
+
+		function openAdd() {
+			current = null;
+			document.getElementById('modalTitle').textContent = 'Add User';
+			document.getElementById('fn').value = '';
+			document.getElementById('ln').value = '';
+			document.getElementById('em').value = '';
+			document.getElementById('ph').value = '';
+			document.getElementById('nic').value = '';
+			document.getElementById('role').value = 'Passenger';
+			document.getElementById('pw').value = '';
+			clearAdminValidationErrors(); // Clear validation errors
+			modal.style.display = 'flex';
+		}
+
+		async function save() {
+			// Validate form before submission
+			if (!validateAdminForm()) {
+				return;
+			}
+
+			try {
+				// Get form values
+				const firstName = document.getElementById('fn').value.trim();
+				const lastName = document.getElementById('ln').value.trim();
+				const email = document.getElementById('em').value.trim();
+				const phone = document.getElementById('ph').value.trim();
+				const nic = document.getElementById('nic').value.trim();
+				const role = document.getElementById('role').value;
+				const pw = document.getElementById('pw').value;
+
+				const payload = {
+					firstName: firstName,
+					lastName: lastName,
+					email: email,
+					phone: phone,
+					nic: nic,
+					role: role
+				};
+				
+				if (!current) {
+					// create
+					payload.password = pw;
+					const res = await fetch(`${API}/register`, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify(payload)
+					});
+					if (!res.ok) { 
+						const error = await res.text();
+						alert('Create failed: ' + error); 
+						return; 
+					}
+				} else {
+					// update
+					if (pw) payload.password = pw;
+					const res = await fetch(`${API}/${current.id}`, {
+						method: 'PUT',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify(payload)
+					});
+					if (!res.ok) { 
+						const error = await res.text();
+						alert('Update failed: ' + error); 
+						return; 
+					}
+				}
+				modal.style.display = 'none';
+				await load(); // Wait for load to complete
+			} catch (error) {
+				console.error('Error saving user:', error);
+				alert('Error saving user. Please try again.');
+			}
+		}
+
+		function filter() {
+			const q = document.getElementById('search').value.toLowerCase();
+			for (const tr of tbody.children) {
+				const text = tr.innerText.toLowerCase();
+				tr.style.display = text.includes(q) ? '' : 'none';
+			}
+		}
+
+	</script>
+</body>
+</html>
